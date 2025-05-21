@@ -85,7 +85,7 @@ function App() {
 
   return (
     <div style={{ textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
-      <h1>OptionScope: Stock Lookup</h1>
+      <h1>OptionVue: Stock Lookup</h1>
       <input 
         value={symbol} 
         onChange={e => setSymbol(e.target.value)} 

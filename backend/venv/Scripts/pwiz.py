@@ -1,4 +1,4 @@
-#!C:\Coding\OptionScope\backend\venv\Scripts\python.exe
+#!C:\Coding\OptiVue\backend\venv\Scripts\python.exe
 
 import datetime
 import os
