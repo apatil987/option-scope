@@ -82,3 +82,14 @@ def update_user_settings(
         "preferred_view": user.preferred_view,
         "account_type": user.account_type
     }}
+
+@router.get("/user_profile/{firebase_uid}")
+def get_user_profile(firebase_uid: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "preferred_view": user.preferred_view,
+        "account_type": user.account_type,
+        "last_login": user.last_login.isoformat()
+    }
