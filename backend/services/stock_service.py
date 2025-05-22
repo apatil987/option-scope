@@ -6,6 +6,9 @@ def get_stock_quote(ticker: str):
     stock = yf.Ticker(ticker)
     data = stock.info
 
+    hist = stock.history(period="1mo")
+    historical = [{"date": str(idx.date()), "close": round(row["Close"], 2)} for idx, row in hist.iterrows()]
+
     return {
         "symbol": ticker.upper(),
         "current_price": data.get("regularMarketPrice"),
@@ -15,8 +18,10 @@ def get_stock_quote(ticker: str):
             ((data.get("regularMarketPrice", 0) - data.get("previousClose", 0)) / data.get("previousClose", 1)) * 100,
             2
         ),
-        "volume": data.get("volume")
+        "volume": data.get("volume"),
+        "history": historical  # ⬅️ New!
     }
+
 
 
 def get_option_chain(ticker: str, expiration: str = None):

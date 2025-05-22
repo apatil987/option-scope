@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import StockChart from '../components/StockChart';
 
 export default function Search() {
   const [symbol, setSymbol] = useState('');
@@ -8,6 +9,7 @@ export default function Search() {
   const [optionType, setOptionType] = useState('calls');
   const [showOptions, setShowOptions] = useState(false);
   const [error, setError] = useState('');
+  const [showChart, setShowChart] = useState(false);
 
   const [filters, setFilters] = useState({
     minStrike: '',
@@ -82,7 +84,15 @@ export default function Search() {
       <h1>OptiVue: Stock Lookup</h1>
       <input value={symbol} onChange={e => setSymbol(e.target.value)} placeholder="Ticker" />
       <button onClick={fetchStockData}>Search</button>
+      <button onClick={() => setShowChart(!showChart)}>
+        {showChart ? 'Hide Chart' : 'Show Chart'}
+      </button>
       {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
+      {showChart && stockData && stockData.history && (
+        <div style={{ maxWidth: '800px', margin: '20px auto' }}>
+          <StockChart data={stockData.history} />
+        </div>
+      )}
 
       {stockData && (
         <div style={{ marginTop: '20px' }}>
