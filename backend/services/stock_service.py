@@ -19,7 +19,7 @@ def get_stock_quote(ticker: str):
             2
         ),
         "volume": data.get("volume"),
-        "history": historical  # ⬅️ New!
+        "history": historical  
     }
 
 

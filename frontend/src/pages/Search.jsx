@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import StockChart from '../components/StockChart';
+import TradingViewChart from '../components/TradingViewChart';
 
 export default function Search() {
   const [symbol, setSymbol] = useState('');
@@ -88,11 +88,12 @@ export default function Search() {
         {showChart ? 'Hide Chart' : 'Show Chart'}
       </button>
       {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
-      {showChart && stockData && stockData.history && (
-        <div style={{ maxWidth: '800px', margin: '20px auto' }}>
-          <StockChart data={stockData.history} />
+      {showChart && symbol && (
+        <div style={{ marginTop: '20px' }}>
+          <TradingViewChart symbol={symbol.toUpperCase()} />
         </div>
       )}
+
 
       {stockData && (
         <div style={{ marginTop: '20px' }}>
