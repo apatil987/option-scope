@@ -58,7 +58,13 @@ const Sidebar = forwardRef((props, ref) => {
 
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      // Update last_login in backend
+      await fetch("http://127.0.0.1:8000/update_last_login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firebase_uid: result.user.uid }),
+      });
     } catch (err) {
       console.error("Login error:", err);
     }
@@ -97,7 +103,24 @@ const Sidebar = forwardRef((props, ref) => {
               <div style={{ marginTop: '10px' }}>
                 <p style={{ color: '#c3d4e9' }}>Account: {profile.account_type}</p>
                 <p style={{ color: '#c3d4e9' }}>View: {profile.preferred_view}</p>
-                <p style={{ color: '#c3d4e9' }}>Last Login:<br />{new Date(profile.last_login).toLocaleString()}</p>
+                <p style={{ color: '#c3d4e9' }}>
+                  Registered:<br />
+                  {profile.registered_at
+                    ? (() => {
+                        const d = new Date(profile.registered_at);
+                        return isNaN(d) ? "N/A" : d.toLocaleString();
+                      })()
+                    : "N/A"}
+                </p>
+                <p style={{ color: '#c3d4e9' }}>
+                  Last Login:<br />
+                  {profile.last_login
+                    ? (() => {
+                        const d = new Date(profile.last_login);
+                        return isNaN(d) ? "N/A" : d.toLocaleString();
+                      })()
+                    : "N/A"}
+                </p>
               </div>
             )}
             <button onClick={handleLogout} style={{ marginTop: '10px' }}>Logout</button>

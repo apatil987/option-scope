@@ -31,3 +31,15 @@ class WatchlistItem(Base):
     strike = Column(Float, nullable=True)
     expiration = Column(String, nullable=True)
     added_at = Column(DateTime, default=datetime.now(ZoneInfo("UTC")))
+
+class UserProfile(BaseModel):
+    firebase_uid: str
+    email: str
+    name: str
+    registered_at: str | None = None
+    last_login: str | None = None
+    preferred_view: str | None = None
+    account_type: str | None = None
+
+    class Config:
+        orm_mode = True

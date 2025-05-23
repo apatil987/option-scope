@@ -18,6 +18,9 @@ class WatchlistRequest(BaseModel):
     strike: Optional[float] = None
     expiration: Optional[str] = None
 
+class LastLoginUpdate(BaseModel):
+    firebase_uid: str
+
 def get_db():
     db = SessionLocal()
     try:
@@ -95,11 +98,7 @@ def get_user_profile(firebase_uid: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return {
-        "preferred_view": user.preferred_view,
-        "account_type": user.account_type,
-        "last_login": user.last_login.isoformat()
-    }
+    return user
 
 
 @router.post("/add_to_watchlist/")
@@ -164,3 +163,12 @@ def remove_from_watchlist(
     db.delete(item)
     db.commit()
     return {"message": "Removed from watchlist"}
+
+@router.post("/update_last_login/")
+def update_last_login(payload: LastLoginUpdate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.firebase_uid == payload.firebase_uid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.last_login = datetime.now(ZoneInfo("UTC"))
+    db.commit()
+    return {"message": "Last login updated", "last_login": user.last_login.isoformat()}
