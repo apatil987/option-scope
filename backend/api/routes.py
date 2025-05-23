@@ -114,7 +114,7 @@ def add_to_watchlist(item: WatchlistRequest, db: Session = Depends(get_db)):
         ).first()
 
         if existing:
-            return {"message": "Already in watchlist"}
+            raise HTTPException(status_code=409, detail="Already in watchlist")
 
         new_item = WatchlistItem(
             firebase_uid=item.firebase_uid,
@@ -122,7 +122,7 @@ def add_to_watchlist(item: WatchlistRequest, db: Session = Depends(get_db)):
             option_type=item.option_type,
             strike=item.strike,
             expiration=item.expiration,
-            added_at=datetime.utcnow()
+            added_at=datetime.now(ZoneInfo("UTC"))
         )
         db.add(new_item)
         db.commit()
@@ -141,3 +141,26 @@ def get_watchlist(firebase_uid: str, type: str = Query("stocks"), db: Session = 
         query = query.filter(WatchlistItem.option_type != None)
 
     return query.all()
+
+
+@router.delete("/remove_from_watchlist/")
+def remove_from_watchlist(
+    firebase_uid: str = Body(...),
+    symbol: str = Body(...),
+    option_type: str = Body(None),
+    strike: float = Body(None),
+    expiration: str = Body(None),
+    db: Session = Depends(get_db)
+):
+    item = db.query(WatchlistItem).filter_by(
+        firebase_uid=firebase_uid,
+        symbol=symbol,
+        option_type=option_type,
+        strike=strike,
+        expiration=expiration
+    ).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    db.delete(item)
+    db.commit()
+    return {"message": "Removed from watchlist"}

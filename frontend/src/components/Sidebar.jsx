@@ -1,11 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { auth, provider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-export default function Sidebar() {
+const Sidebar = forwardRef((props, ref) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const navigate = useNavigate();
+
+  
+  useImperativeHandle(ref, () => ({
+    fetchProfile: (uid) => {
+      const fetchUid = uid || user?.uid;
+      if (fetchUid) {
+        fetch(`http://127.0.0.1:8000/user_profile/${fetchUid}`)
+          .then((res) => res.json())
+          .then(setProfile)
+          .catch(console.error);
+      }
+    }
+  }));
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -51,7 +65,9 @@ export default function Sidebar() {
   };
 
   const handleLogout = () => {
-    signOut(auth);
+    signOut(auth).then(() => {
+      navigate("/");
+    });
   };
 
   return (
@@ -61,10 +77,14 @@ export default function Sidebar() {
         <li><Link to="/" style={{ color: 'white' }}>🏠 Home</Link></li>
         <li><Link to="/search" style={{ color: 'white' }}>📊 Search Stocks</Link></li>
         <li><Link to="/big-movers" style={{ color: 'white' }}>📈 Big Movers</Link></li>
-        <li><Link to="/gpt" style={{ color: 'white' }}>🧠 GPT Forecasts</Link></li>
         <li><Link to="/expected-value" style={{ color: 'white' }}>∑ Expected Value</Link></li>
-        <li><Link to="/watchlist" style={{ color: 'white' }}>⭐ My Watchlist</Link></li>
-        <li><Link to="/settings" style={{ color: 'white' }}>⚙️ Settings</Link></li>
+        {user && (
+          <>
+            <li><Link to="/watchlist" style={{ color: 'white' }}>⭐ My Watchlist</Link></li>
+            <li><Link to="/gpt" style={{ color: 'white' }}>🧠 GPT Forecasts</Link></li>
+            <li><Link to="/settings" style={{ color: 'white' }}>⚙️ Settings</Link></li>
+          </>
+        )}
       </ul>
 
       <div style={{ marginTop: '30px', fontSize: '14px' }}>
@@ -88,4 +108,6 @@ export default function Sidebar() {
       </div>
     </div>
   );
-}
+});
+
+export default Sidebar;

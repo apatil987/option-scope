@@ -13,6 +13,11 @@ export default function Search() {
   const [showChart, setShowChart] = useState(false);
   const [user, setUser] = useState(null);
 
+  // Separate watchlists for stocks and options
+  const [stockWatchlist, setStockWatchlist] = useState([]);
+  const [optionWatchlist, setOptionWatchlist] = useState([]);
+  const [isStockInWatchlist, setIsStockInWatchlist] = useState(false);
+
   const [filters, setFilters] = useState({
     minStrike: '',
     maxStrike: '',
@@ -25,6 +30,33 @@ export default function Search() {
     const unsubscribe = auth.onAuthStateChanged(setUser);
     return () => unsubscribe();
   }, []);
+
+  // Fetch stock watchlist when stockData changes
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (user && stockData) {
+      fetch(`http://127.0.0.1:8000/get_watchlist/${user.uid}?type=stocks`)
+        .then(res => res.json())
+        .then(data => {
+          setStockWatchlist(data);
+          setIsStockInWatchlist(
+            data.some(item => item.symbol === stockData.symbol)
+          );
+        })
+        .catch(console.error);
+    }
+  }, [stockData]);
+
+  // Fetch option watchlist when options are shown
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (user && stockData && showOptions) {
+      fetch(`http://127.0.0.1:8000/get_watchlist/${user.uid}?type=options`)
+        .then(res => res.json())
+        .then(data => setOptionWatchlist(data))
+        .catch(console.error);
+    }
+  }, [stockData, showOptions, selectedExpiration, optionType]);
 
   useEffect(() => {
     if (showOptions && stockData) {
@@ -72,6 +104,17 @@ export default function Search() {
     }
   };
 
+  // Helper for options
+  const isOptionInWatchlist = (opt, type) => {
+    return optionWatchlist.some(
+      item =>
+        item.symbol === stockData.symbol &&
+        item.strike === opt.strike &&
+        item.expiration === selectedExpiration &&
+        item.option_type === type
+    );
+  };
+
   const handleAddToWatchlist = async (opt, type) => {
     const user = auth.currentUser;
     if (!user) return alert("Login first");
@@ -91,16 +134,84 @@ export default function Search() {
     });
 
     const data = await res.json();
+
     if (res.ok) {
-      if (data.message === "Already in watchlist") {
-        alert("Already added ❌");
-      } 
-      else {
-        alert("Added ✅");
-      }
-    }  else {
-      alert("Error adding to watchlist ❌");
+      alert("Added ✅");
+    } else if (res.status === 409) {
+      alert("Already in watchlist ❌");
+    } else {
+      alert("Failed to add ❌");
     }
+
+    // After success refetch option watchlist
+    fetch(`http://127.0.0.1:8000/get_watchlist/${auth.currentUser.uid}?type=options`)
+      .then(res => res.json())
+      .then(setOptionWatchlist)
+      .catch(console.error);
+  };
+
+  const handleRemoveFromWatchlist = async (opt, type) => {
+    const payload = {
+      firebase_uid: auth.currentUser.uid,
+      symbol: stockData.symbol,
+      strike: opt?.strike,
+      expiration: selectedExpiration,
+      option_type: type,
+    };
+    await fetch("http://127.0.0.1:8000/remove_from_watchlist/", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    // Refetch option watchlist
+    fetch(`http://127.0.0.1:8000/get_watchlist/${auth.currentUser.uid}?type=options`)
+      .then(res => res.json())
+      .then(setOptionWatchlist)
+      .catch(console.error);
+  };
+
+  // For stocks
+  const handleAddStock = async () => {
+    const user = auth.currentUser;
+    if (!user) return alert("Login first");
+
+    await fetch("http://127.0.0.1:8000/add_to_watchlist/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firebase_uid: user.uid,
+        symbol: symbol.toUpperCase(),
+      }),
+    });
+
+    alert("Stock added to watchlist ✅");
+
+    fetch(`http://127.0.0.1:8000/get_watchlist/${auth.currentUser.uid}?type=stocks`)
+      .then(res => res.json())
+      .then(data => {
+        setStockWatchlist(data);
+        setIsStockInWatchlist(true);
+      })
+      .catch(console.error);
+  };
+
+  const handleRemoveStock = async () => {
+    const payload = {
+      firebase_uid: auth.currentUser.uid,
+      symbol: stockData.symbol,
+    };
+    await fetch("http://127.0.0.1:8000/remove_from_watchlist/", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    fetch(`http://127.0.0.1:8000/get_watchlist/${auth.currentUser.uid}?type=stocks`)
+      .then(res => res.json())
+      .then(data => {
+        setStockWatchlist(data);
+        setIsStockInWatchlist(false);
+      })
+      .catch(console.error);
   };
 
   const applyFilters = (options) => {
@@ -126,28 +237,16 @@ export default function Search() {
         {showChart ? 'Hide Chart' : 'Show Chart'}
       </button>
       
-      {stockData && !showOptions && (
-        <button
-          onClick={async () => {
-            const user = auth.currentUser;
-            if (!user) return alert("Login first");
-
-            await fetch("http://127.0.0.1:8000/add_to_watchlist/", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                firebase_uid: user.uid,
-                symbol: symbol.toUpperCase(),
-              }),
-            });
-
-            alert("Stock added to watchlist ✅");
-          }}
-        >
-          ⭐ Add Stock to Watchlist
-        </button>
+      {stockData && (
+        <div>
+          {/* Always show add/remove stock button */}
+          {isStockInWatchlist ? (
+            <button onClick={handleRemoveStock}>❌ Remove Stock from Watchlist</button>
+          ) : (
+            <button onClick={handleAddStock}>⭐ Add Stock to Watchlist</button>
+          )}
+        </div>
       )}
-
 
       {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
       {showChart && symbol && (
@@ -209,7 +308,17 @@ export default function Search() {
                       <td>{opt.openInterest}</td>
                       <td>{opt.volume}</td>
                       <td>{opt.inTheMoney ? '✅' : ''}</td>
-                      <td><button onClick={() => handleAddToWatchlist(opt, optionType)}>⭐</button></td>
+                      <td>
+                        {isOptionInWatchlist(opt, optionType) ? (
+                          <button onClick={() => handleRemoveFromWatchlist(opt, optionType)}>
+                            ❌ Remove
+                          </button>
+                        ) : (
+                          <button onClick={() => handleAddToWatchlist(opt, optionType)}>
+                            ⭐ Add
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

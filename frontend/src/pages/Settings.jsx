@@ -1,18 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
-function Settings() {
+function Settings({ sidebarRef }) {
   const [preferredView, setPreferredView] = useState("table");
   const [accountType, setAccountType] = useState("free");
   const [message, setMessage] = useState("");
   const [firebaseUid, setFirebaseUid] = useState("");
 
-  // Grab UID on load
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setFirebaseUid(user.uid);
+        fetch(`http://127.0.0.1:8000/user_profile/${user.uid}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.preferred_view) setPreferredView(data.preferred_view);
+            if (data.account_type) setAccountType(data.account_type);
+          })
+          .catch(console.error);
       }
     });
     return () => unsubscribe();
@@ -37,6 +43,9 @@ function Settings() {
       const data = await res.json();
       if (res.ok) {
         setMessage("Settings saved ✅");
+        if (sidebarRef && sidebarRef.current && sidebarRef.current.fetchProfile) {
+          sidebarRef.current.fetchProfile(firebaseUid);
+        }
       } else {
         setMessage(`Error: ${data.detail}`);
       }
