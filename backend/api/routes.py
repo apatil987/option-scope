@@ -1,15 +1,22 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Body
 from sqlalchemy.orm import Session
-from services.db import SessionLocal
-from services.models import User
-from services.stock_service import get_stock_quote, get_option_chain
 from datetime import datetime
 from zoneinfo import ZoneInfo
-import console
-from services.models import UserCreate
-from fastapi import Body
+from pydantic import BaseModel
+from typing import Optional
+
+from services.db import SessionLocal
+from services.models import User, UserCreate, WatchlistItem
+from services.stock_service import get_stock_quote, get_option_chain
 
 router = APIRouter()
+
+class WatchlistRequest(BaseModel):
+    firebase_uid: str
+    symbol: str
+    option_type: Optional[str] = None  
+    strike: Optional[float] = None
+    expiration: Optional[str] = None
 
 def get_db():
     db = SessionLocal()
@@ -93,3 +100,44 @@ def get_user_profile(firebase_uid: str, db: Session = Depends(get_db)):
         "account_type": user.account_type,
         "last_login": user.last_login.isoformat()
     }
+
+
+@router.post("/add_to_watchlist/")
+def add_to_watchlist(item: WatchlistRequest, db: Session = Depends(get_db)):
+    try:
+        existing = db.query(WatchlistItem).filter_by(
+            firebase_uid=item.firebase_uid,
+            symbol=item.symbol,
+            option_type=item.option_type,
+            strike=item.strike,
+            expiration=item.expiration
+        ).first()
+
+        if existing:
+            return {"message": "Already in watchlist"}
+
+        new_item = WatchlistItem(
+            firebase_uid=item.firebase_uid,
+            symbol=item.symbol,
+            option_type=item.option_type,
+            strike=item.strike,
+            expiration=item.expiration,
+            added_at=datetime.utcnow()
+        )
+        db.add(new_item)
+        db.commit()
+        return {"message": "Added to watchlist"}
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/get_watchlist/{firebase_uid}")
+def get_watchlist(firebase_uid: str, type: str = Query("stocks"), db: Session = Depends(get_db)):
+    query = db.query(WatchlistItem).filter(WatchlistItem.firebase_uid == firebase_uid)
+    if type == "stocks":
+        query = query.filter(WatchlistItem.option_type == None)
+    elif type == "options":
+        query = query.filter(WatchlistItem.option_type != None)
+
+    return query.all()

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TradingViewChart from '../components/TradingViewChart';
+import { auth } from '../firebase';
 
 export default function Search() {
   const [symbol, setSymbol] = useState('');
@@ -10,6 +11,7 @@ export default function Search() {
   const [showOptions, setShowOptions] = useState(false);
   const [error, setError] = useState('');
   const [showChart, setShowChart] = useState(false);
+  const [user, setUser] = useState(null);
 
   const [filters, setFilters] = useState({
     minStrike: '',
@@ -18,6 +20,11 @@ export default function Search() {
     maxIV: '',
     itmOnly: false
   });
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(setUser);
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (showOptions && stockData) {
@@ -65,6 +72,37 @@ export default function Search() {
     }
   };
 
+  const handleAddToWatchlist = async (opt, type) => {
+    const user = auth.currentUser;
+    if (!user) return alert("Login first");
+
+    const payload = {
+      firebase_uid: user.uid,
+      symbol: symbol.toUpperCase(),
+      strike: opt.strike,
+      expiration: selectedExpiration,
+      option_type: type,
+    };
+
+    const res = await fetch("http://127.0.0.1:8000/add_to_watchlist/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      if (data.message === "Already in watchlist") {
+        alert("Already added ❌");
+      } 
+      else {
+        alert("Added ✅");
+      }
+    }  else {
+      alert("Error adding to watchlist ❌");
+    }
+  };
+
   const applyFilters = (options) => {
     return options.filter(opt => {
       const strike = opt.strike;
@@ -87,13 +125,36 @@ export default function Search() {
       <button onClick={() => setShowChart(!showChart)}>
         {showChart ? 'Hide Chart' : 'Show Chart'}
       </button>
+      
+      {stockData && !showOptions && (
+        <button
+          onClick={async () => {
+            const user = auth.currentUser;
+            if (!user) return alert("Login first");
+
+            await fetch("http://127.0.0.1:8000/add_to_watchlist/", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                firebase_uid: user.uid,
+                symbol: symbol.toUpperCase(),
+              }),
+            });
+
+            alert("Stock added to watchlist ✅");
+          }}
+        >
+          ⭐ Add Stock to Watchlist
+        </button>
+      )}
+
+
       {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
       {showChart && symbol && (
         <div style={{ marginTop: '20px' }}>
           <TradingViewChart symbol={symbol.toUpperCase()} />
         </div>
       )}
-
 
       {stockData && (
         <div style={{ marginTop: '20px' }}>
@@ -135,25 +196,20 @@ export default function Search() {
               <table style={{ margin: 'auto', borderCollapse: 'collapse', marginTop: '10px' }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: '8px' }}>Strike</th>
-                    <th style={{ padding: '8px' }}>Bid</th>
-                    <th style={{ padding: '8px' }}>Ask</th>
-                    <th style={{ padding: '8px' }}>IV</th>
-                    <th style={{ padding: '8px' }}>OI</th>
-                    <th style={{ padding: '8px' }}>Volume</th>
-                    <th style={{ padding: '8px' }}>ITM</th>
+                    <th>Strike</th><th>Bid</th><th>Ask</th><th>IV</th><th>OI</th><th>Volume</th><th>ITM</th><th>+Watch</th>
                   </tr>
                 </thead>
                 <tbody>
                   {applyFilters(optionData[optionType]).map((opt, idx) => (
                     <tr key={idx}>
-                      <td style={{ padding: '8px' }}>{opt.strike}</td>
-                      <td style={{ padding: '8px' }}>{opt.bid}</td>
-                      <td style={{ padding: '8px' }}>{opt.ask}</td>
-                      <td style={{ padding: '8px' }}>{(opt.impliedVolatility * 100).toFixed(2)}%</td>
-                      <td style={{ padding: '8px' }}>{opt.openInterest}</td>
-                      <td style={{ padding: '8px' }}>{opt.volume}</td>
-                      <td style={{ padding: '8px' }}>{opt.inTheMoney ? '✅' : ''}</td>
+                      <td>{opt.strike}</td>
+                      <td>{opt.bid}</td>
+                      <td>{opt.ask}</td>
+                      <td>{(opt.impliedVolatility * 100).toFixed(2)}%</td>
+                      <td>{opt.openInterest}</td>
+                      <td>{opt.volume}</td>
+                      <td>{opt.inTheMoney ? '✅' : ''}</td>
+                      <td><button onClick={() => handleAddToWatchlist(opt, optionType)}>⭐</button></td>
                     </tr>
                   ))}
                 </tbody>
