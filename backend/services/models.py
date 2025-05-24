@@ -43,3 +43,24 @@ class UserProfile(BaseModel):
 
     class Config:
         from_attributes = True
+
+class OptionPremiumHistory(Base):
+    __tablename__ = "option_premium_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    watchlist_id = Column(Integer, index=True)  # Add this field
+    firebase_uid = Column(String, index=True)
+    contract_symbol = Column(String)
+    ticker = Column(String)
+    strike = Column(Float)
+    expiration = Column(String)
+    option_type = Column(String)  
+    premium = Column(Float)
+    recorded_at = Column(DateTime, default=datetime.now(ZoneInfo("UTC")))
+
+class WatchlistRequest(BaseModel):
+    firebase_uid: str
+    symbol: str
+    option_type: str | None = None
+    strike: float | None = None
+    expiration: str | None = None

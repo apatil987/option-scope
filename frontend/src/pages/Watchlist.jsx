@@ -3,6 +3,7 @@ import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { Sparklines, SparklinesLine } from "react-sparklines";
+import OptionPriceChart from '../components/OptionPriceChart';
 
 export default function Watchlist() {
   const [firebaseUid, setFirebaseUid] = useState(null);
@@ -11,6 +12,7 @@ export default function Watchlist() {
   const [sortOption, setSortOption] = useState("alphabetical");
   const [stockDataMap, setStockDataMap] = useState({});
   const [timeInterval, setTimeInterval] = useState("1d"); // Change the default timeInterval to "1d"
+  const [selectedOption, setSelectedOption] = useState(null);
   const navigate = useNavigate();
 
   // Auth listener
@@ -55,24 +57,40 @@ export default function Watchlist() {
     }
   }, [watchlist, view, timeInterval]); // Add timeInterval to dependencies
 
-  const handleRemove = (item) => {
-    fetch("http://127.0.0.1:8000/remove_from_watchlist/", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        firebase_uid: firebaseUid,
-        symbol: item.symbol,
-        option_type: item.option_type,
-        strike: item.strike,
-        expiration: item.expiration,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to remove");
-        setWatchlist((prev) => prev.filter((w) => w.symbol !== item.symbol));
-      })
-      .catch(console.error);
-  };
+  const handleRemove = async (item) => {
+    try {
+        const response = await fetch('http://127.0.0.1:8000/remove_from_watchlist/', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                firebase_uid: firebaseUid,
+                symbol: item.symbol,
+                option_type: item.option_type,
+                strike: item.strike,
+                expiration: item.expiration
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to remove item');
+        }
+
+        // Update state more precisely
+        setWatchlist(prevList => 
+            prevList.filter(listItem => 
+                !(listItem.symbol === item.symbol && 
+                  listItem.option_type === item.option_type &&
+                  listItem.strike === item.strike &&
+                  listItem.expiration === item.expiration)
+            )
+        );
+        
+    } catch (error) {
+        console.error('Error removing item:', error);
+    }
+};
 
   // Sort watchlist based on selected option
   const sortedWatchlist = [...watchlist].sort((a, b) => {
@@ -171,6 +189,7 @@ export default function Watchlist() {
                 <th>Strike</th>
                 <th>Expiration</th>
                 <th>Type</th>
+                <th>Chart</th>
               </>
             )}
             <th>Actions</th>
@@ -232,6 +251,21 @@ export default function Watchlist() {
                   <td>{item.strike}</td>
                   <td>{item.expiration}</td>
                   <td>{item.option_type}</td>
+                  <td>
+                    <button 
+                      onClick={() => setSelectedOption(item)}
+                      style={{
+                        padding: "5px 10px",
+                        backgroundColor: "#1976d2",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      View Chart
+                    </button>
+                  </td>
                 </>
               )}
               
@@ -254,6 +288,18 @@ export default function Watchlist() {
           ))}
         </tbody>
       </table>
+
+      {view === "options" && selectedOption && (
+        <div style={{ marginTop: "20px" }}>
+          <OptionPriceChart
+            contractSymbol={selectedOption.contract_symbol}
+            ticker={selectedOption.symbol}
+            strike={selectedOption.strike}
+            expiration={selectedOption.expiration}
+            type={selectedOption.option_type}
+          />
+        </div>
+      )}
     </div>
   );
 }

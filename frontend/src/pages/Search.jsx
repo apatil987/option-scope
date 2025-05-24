@@ -112,6 +112,11 @@ export default function Search() {
       const data = await response.json();
       setOptionData(data);
       setShowOptions(true);
+
+      // Set the default expiration date if not already set
+      if (!selectedExpiration && data.expirations.length > 0) {
+        setSelectedExpiration(data.expirations[0]);
+      }
     } catch (error) {
       setError(`Error: ${error.message}`);
       setOptionData(null);
@@ -295,8 +300,11 @@ export default function Search() {
               <div style={{ marginBottom: '10px' }}>
                 <label>
                   Expiration:
-                  <select value={selectedExpiration} onChange={e => setSelectedExpiration(e.target.value)}>
-                    {optionData.expirations.map(exp => (
+                  <select 
+                    value={selectedExpiration} 
+                    onChange={e => setSelectedExpiration(e.target.value)}
+                  >
+                    {optionData?.expirations.map(exp => (
                       <option key={exp} value={exp}>{exp}</option>
                     ))}
                   </select>

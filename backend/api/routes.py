@@ -7,7 +7,7 @@ from typing import Optional
 import yfinance as yf
 
 from services.db import SessionLocal
-from services.models import User, UserCreate, WatchlistItem
+from services.models import User, UserCreate, WatchlistItem, OptionPremiumHistory
 from services.stock_service import get_stock_quote, get_option_chain
 
 router = APIRouter()
@@ -105,12 +105,27 @@ def get_user_profile(firebase_uid: str, db: Session = Depends(get_db)):
 @router.post("/add_to_watchlist/")
 def add_to_watchlist(item: WatchlistRequest, db: Session = Depends(get_db)):
     try:
-        existing = db.query(WatchlistItem).filter_by(
-            firebase_uid=item.firebase_uid,
-            symbol=item.symbol,
-            option_type=item.option_type,
-            strike=item.strike,
-            expiration=item.expiration
+        print(f"Received watchlist request: {item}")
+
+        # Validate option data consistency
+        has_option_fields = any([item.option_type, item.strike, item.expiration])
+        has_valid_expiration = item.expiration and item.expiration.strip() != ''
+
+        if has_option_fields:
+            if not all([item.option_type, item.strike]) or not has_valid_expiration:
+                print(f"Invalid option data: type={item.option_type}, strike={item.strike}, exp={item.expiration}")
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Please select an expiration date and provide all option fields"
+                )
+
+        # Check for existing item
+        existing = db.query(WatchlistItem).filter(
+            WatchlistItem.firebase_uid == item.firebase_uid,
+            WatchlistItem.symbol == item.symbol,
+            WatchlistItem.option_type == item.option_type,
+            WatchlistItem.strike == item.strike,
+            WatchlistItem.expiration == item.expiration
         ).first()
 
         if existing:
@@ -121,26 +136,48 @@ def add_to_watchlist(item: WatchlistRequest, db: Session = Depends(get_db)):
             symbol=item.symbol,
             option_type=item.option_type,
             strike=item.strike,
-            expiration=item.expiration,
+            expiration=item.expiration if has_valid_expiration else None,
             added_at=datetime.now(ZoneInfo("UTC"))
         )
         db.add(new_item)
         db.commit()
-        return {"message": "Added to watchlist"}
-    
+        db.refresh(new_item)
+        
+        return {"message": "Added to watchlist", "item": new_item}
+
+    except HTTPException as he:
+        raise he
     except Exception as e:
+        print(f"Error adding to watchlist: {str(e)}")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.get("/get_watchlist/{firebase_uid}")
 def get_watchlist(firebase_uid: str, type: str = Query("stocks"), db: Session = Depends(get_db)):
-    query = db.query(WatchlistItem).filter(WatchlistItem.firebase_uid == firebase_uid)
-    if type == "stocks":
-        query = query.filter(WatchlistItem.option_type == None)
-    elif type == "options":
-        query = query.filter(WatchlistItem.option_type != None)
-
-    return query.all()
+    try:
+        query = db.query(WatchlistItem).filter(
+            WatchlistItem.firebase_uid == firebase_uid
+        )
+        
+        if type == "stocks":
+            items = query.filter(
+                WatchlistItem.option_type.is_(None),
+                WatchlistItem.strike.is_(None),
+                WatchlistItem.expiration.is_(None)
+            ).all()
+        elif type == "options":
+            items = query.filter(
+                WatchlistItem.option_type.isnot(None),
+                WatchlistItem.strike.isnot(None),
+                WatchlistItem.expiration.isnot(None),
+                WatchlistItem.expiration != ''
+            ).order_by(WatchlistItem.symbol, WatchlistItem.expiration).all()
+        else:
+            raise HTTPException(status_code=400, detail="Invalid type parameter")
+        
+        return items
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @router.delete("/remove_from_watchlist/")
@@ -152,18 +189,58 @@ def remove_from_watchlist(
     expiration: str = Body(None),
     db: Session = Depends(get_db)
 ):
-    item = db.query(WatchlistItem).filter_by(
-        firebase_uid=firebase_uid,
-        symbol=symbol,
-        option_type=option_type,
-        strike=strike,
-        expiration=expiration
-    ).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    db.delete(item)
-    db.commit()
-    return {"message": "Removed from watchlist"}
+    try:
+        print(f"Removing item: {symbol} {option_type} {strike} {expiration}")  # Debug log
+        
+        # Build base query
+        query = db.query(WatchlistItem).filter(
+            WatchlistItem.firebase_uid == firebase_uid,
+            WatchlistItem.symbol == symbol
+        )
+
+        if option_type and strike and expiration:
+            # Remove specific option
+            query = query.filter(
+                WatchlistItem.option_type == option_type,
+                WatchlistItem.strike == strike,
+                WatchlistItem.expiration == expiration
+            )
+        else:
+            # Remove stock (ensure we don't delete options)
+            query = query.filter(
+                WatchlistItem.option_type.is_(None),
+                WatchlistItem.strike.is_(None),
+                WatchlistItem.expiration.is_(None)
+            )
+
+        # Get the item before deletion
+        item = query.first()
+        if not item:
+            raise HTTPException(status_code=404, detail="Item not found")
+
+        try:
+            # Delete associated option premium history if it exists
+            if item.option_type:
+                db.query(OptionPremiumHistory).filter(
+                    OptionPremiumHistory.watchlist_id == item.id
+                ).delete(synchronize_session='fetch')
+
+            # Delete the watchlist item
+            db.delete(item)
+            db.commit()
+            
+            return {"message": "Item removed successfully"}
+            
+        except Exception as db_error:
+            db.rollback()
+            print(f"Database error: {str(db_error)}")  # Debug log
+            raise HTTPException(status_code=500, detail="Database error during deletion")
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")  # Debug log
+        raise HTTPException(status_code=500, detail=f"Error removing item: {str(e)}")
 
 @router.post("/update_last_login/")
 def update_last_login(payload: LastLoginUpdate, db: Session = Depends(get_db)):
@@ -184,12 +261,12 @@ def stock_sparkline(
         
         # Map frontend intervals to yfinance parameters and labels
         interval_settings = {
-            "1d": {"period": "2d", "interval": "5m", "label": "1 Day"},  # Fetch 1 extra day
-            "5d": {"period": "6d", "interval": "15m", "label": "5 Days"},  # Fetch 1 extra day
-            "1mo": {"period": "22d", "interval": "1d", "label": "1 Month"},  # Fetch 1 extra day
-            "3mo": {"period": "92d", "interval": "1d", "label": "3 Months"},  # Fetch 1 extra day
-            "6mo": {"period": "182d", "interval": "1d", "label": "6 Months"},  # Fetch 1 extra day
-            "1y": {"period": "367d", "interval": "1d", "label": "1 Year"}  # Fetch 1 extra day
+            "1d": {"period": "1d", "interval": "5m", "label": "1 Day"},
+            "5d": {"period": "5d", "interval": "15m", "label": "5 Days"},
+            "1mo": {"period": "1mo", "interval": "1d", "label": "1 Month"},
+            "3mo": {"period": "3mo", "interval": "1d", "label": "3 Months"},
+            "6mo": {"period": "6mo", "interval": "1d", "label": "6 Months"},
+            "1y": {"period": "1y", "interval": "1d", "label": "1 Year"}
         }
         
         settings = interval_settings.get(interval, interval_settings["1d"])
@@ -229,4 +306,31 @@ def stock_sparkline(
             "periodLabel": settings["label"]
         }
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/option_price_history/{watchlist_id}")
+async def get_option_price_history(
+    watchlist_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        history = (
+            db.query(OptionPremiumHistory)
+            .filter(OptionPremiumHistory.watchlist_id == watchlist_id)
+            .order_by(OptionPremiumHistory.recorded_at.asc())
+            .all()
+        )
+        
+        if not history:
+            raise HTTPException(status_code=404, detail="No price history found")
+            
+        return [
+            {
+                "premium": float(record.premium),
+                "recorded_at": record.recorded_at.isoformat(),
+            }
+            for record in history
+        ]
+    except Exception as e:
+        print(f"Error fetching option history: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
