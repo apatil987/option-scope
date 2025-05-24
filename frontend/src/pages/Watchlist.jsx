@@ -10,6 +10,7 @@ export default function Watchlist() {
   const [view, setView] = useState("stocks");
   const [sortOption, setSortOption] = useState("alphabetical");
   const [stockDataMap, setStockDataMap] = useState({});
+  const [timeInterval, setTimeInterval] = useState("1d"); // Change the default timeInterval to "1d"
   const navigate = useNavigate();
 
   // Auth listener
@@ -37,7 +38,9 @@ export default function Watchlist() {
         const newStockData = {};
         for (const item of watchlist) {
           try {
-            const res = await fetch(`http://127.0.0.1:8000/stock_sparkline/${item.symbol}`);
+            const res = await fetch(
+              `http://127.0.0.1:8000/stock_sparkline/${item.symbol}?interval=${timeInterval}`
+            );
             if (res.ok) {
               const data = await res.json();
               newStockData[item.symbol] = data;
@@ -50,7 +53,7 @@ export default function Watchlist() {
       };
       fetchStockData();
     }
-  }, [watchlist, view]);
+  }, [watchlist, view, timeInterval]); // Add timeInterval to dependencies
 
   const handleRemove = (item) => {
     fetch("http://127.0.0.1:8000/remove_from_watchlist/", {
@@ -116,9 +119,9 @@ export default function Watchlist() {
         </label>
       </div>
 
-      {/* Sort Options (only for stocks view) */}
+      {/* Sort Options and Interval Selector (only for stocks view) */}
       {view === "stocks" && (
-        <div style={{ marginBottom: "20px" }}>
+        <div style={{ marginBottom: "20px", display: "flex", gap: "20px" }}>
           <label>
             Sort By:{" "}
             <select 
@@ -130,6 +133,22 @@ export default function Watchlist() {
               <option value="price">Price (High to Low)</option>
               <option value="gainers">Top Gainers</option>
               <option value="losers">Top Losers</option>
+            </select>
+          </label>
+
+          <label>
+            Chart Range:{" "}
+            <select
+              value={timeInterval}
+              onChange={(e) => setTimeInterval(e.target.value)}
+              style={{ padding: "5px" }}
+            >
+              <option value="1d">1 Day</option>
+              <option value="5d">5 Days</option>
+              <option value="1mo">1 Month</option>
+              <option value="3mo">3 Months</option>
+              <option value="6mo">6 Months</option>
+              <option value="1y">1 Year</option>
             </select>
           </label>
         </div>
@@ -144,7 +163,7 @@ export default function Watchlist() {
               <>
                 <th>Chart</th>
                 <th>Price</th>
-                <th>Change</th>
+                <th>Change ({timeInterval})</th>
               </>
             )}
             {view === "options" && (

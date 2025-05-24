@@ -175,23 +175,58 @@ def update_last_login(payload: LastLoginUpdate, db: Session = Depends(get_db)):
     return {"message": "Last login updated", "last_login": user.last_login.isoformat()}
 
 @router.get("/stock_sparkline/{symbol}")
-def stock_sparkline(symbol: str):
+def stock_sparkline(
+    symbol: str,
+    interval: str = Query(default="1d", regex="^(1d|5d|1mo|3mo|6mo|1y)$")
+):
     try:
         ticker = yf.Ticker(symbol)
-        # Get last 7 days of minute or daily data for sparkline
-        hist = ticker.history(period="7d", interval="1d")
+        
+        # Map frontend intervals to yfinance parameters and labels
+        interval_settings = {
+            "1d": {"period": "2d", "interval": "5m", "label": "1 Day"},  # Fetch 1 extra day
+            "5d": {"period": "6d", "interval": "15m", "label": "5 Days"},  # Fetch 1 extra day
+            "1mo": {"period": "22d", "interval": "1d", "label": "1 Month"},  # Fetch 1 extra day
+            "3mo": {"period": "92d", "interval": "1d", "label": "3 Months"},  # Fetch 1 extra day
+            "6mo": {"period": "182d", "interval": "1d", "label": "6 Months"},  # Fetch 1 extra day
+            "1y": {"period": "367d", "interval": "1d", "label": "1 Year"}  # Fetch 1 extra day
+        }
+        
+        settings = interval_settings.get(interval, interval_settings["1d"])
+        
+        # Get sparkline data for the extended interval
+        hist = ticker.history(
+            period=settings["period"],
+            interval=settings["interval"]
+        )
+        
         if hist.empty:
             raise HTTPException(status_code=404, detail="No data found for symbol")
+        
+        # Use the last valid close price as the current price
+        current_price = hist["Close"].iloc[-1]
+        
+        # For intervals other than 1d, use the second-to-last data point as the starting price
+        if interval != "1d":
+            period_start_price = hist["Close"].iloc[9]  # First valid close price
+        else:
+            # For 1d, use the previous day's close
+            info = ticker.info
+            period_start_price = info.get("previousClose", hist["Close"].iloc[0])
+        
+        # Calculate change for the selected period
+        change = current_price - period_start_price
+        change_percent = (change / period_start_price * 100) if period_start_price else 0
+        
+        # Convert prices to a list for the sparkline
         prices = hist["Close"].tolist()
-        price = float(prices[-1])
-        prev_close = float(hist["Close"].iloc[-2]) if len(prices) > 1 else price
-        change = price - prev_close
-        change_percent = (change / prev_close * 100) if prev_close else 0
+        
         return {
-            "price": price,
+            "price": current_price,
             "change": change,
             "changePercent": change_percent,
-            "sparkline": prices
+            "sparkline": prices,
+            "periodLabel": settings["label"]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
