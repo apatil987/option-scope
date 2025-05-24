@@ -4,6 +4,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from pydantic import BaseModel
 from typing import Optional
+import yfinance as yf
 
 from services.db import SessionLocal
 from services.models import User, UserCreate, WatchlistItem
@@ -172,3 +173,25 @@ def update_last_login(payload: LastLoginUpdate, db: Session = Depends(get_db)):
     user.last_login = datetime.now(ZoneInfo("UTC"))
     db.commit()
     return {"message": "Last login updated", "last_login": user.last_login.isoformat()}
+
+@router.get("/stock_sparkline/{symbol}")
+def stock_sparkline(symbol: str):
+    try:
+        ticker = yf.Ticker(symbol)
+        # Get last 7 days of minute or daily data for sparkline
+        hist = ticker.history(period="7d", interval="1d")
+        if hist.empty:
+            raise HTTPException(status_code=404, detail="No data found for symbol")
+        prices = hist["Close"].tolist()
+        price = float(prices[-1])
+        prev_close = float(hist["Close"].iloc[-2]) if len(prices) > 1 else price
+        change = price - prev_close
+        change_percent = (change / prev_close * 100) if prev_close else 0
+        return {
+            "price": price,
+            "change": change,
+            "changePercent": change_percent,
+            "sparkline": prices
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
