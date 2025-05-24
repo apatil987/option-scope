@@ -1,21 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import ReactApexCharts from 'react-apexcharts';
 
-export default function OptionPriceChart({ contractSymbol, ticker, strike, expiration, type, firebaseUid }) {
+export default function OptionPriceChart({ watchlistId, ticker, strike, expiration, type }) {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!contractSymbol || !firebaseUid) {
-      console.log("Missing required props:", { contractSymbol, firebaseUid });
+    if (!watchlistId) {
+      console.log("Missing watchlist ID:", watchlistId);
+      setError("Missing watchlist ID");
+      setIsLoading(false);
       return;
     }
 
     const fetchData = async () => {
       try {
+        console.log("Fetching data for watchlist ID:", watchlistId);
+        
         const res = await fetch(
-          `http://127.0.0.1:8000/option_price_history/${contractSymbol}?firebase_uid=${firebaseUid}`
+          `http://127.0.0.1:8000/option_price_history/${watchlistId}`
         );
         
         if (!res.ok) {
@@ -24,8 +28,14 @@ export default function OptionPriceChart({ contractSymbol, ticker, strike, expir
         }
 
         const history = await res.json();
-        console.log("Fetched history:", history); // Debug log
+        console.log("Fetched history:", history);
         
+        if (!history || history.length === 0) {
+          setError("No price history available");
+          setData([]);
+          return;
+        }
+
         const formattedData = history.map(point => ({
           x: new Date(point.recorded_at).getTime(),
           y: point.premium
@@ -42,7 +52,7 @@ export default function OptionPriceChart({ contractSymbol, ticker, strike, expir
     };
 
     fetchData();
-  }, [contractSymbol, firebaseUid]);
+  }, [watchlistId]);
 
   const chartOptions = {
     chart: {

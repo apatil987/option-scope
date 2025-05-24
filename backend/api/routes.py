@@ -9,6 +9,7 @@ import yfinance as yf
 from services.db import SessionLocal
 from services.models import User, UserCreate, WatchlistItem, OptionPremiumHistory
 from services.stock_service import get_stock_quote, get_option_chain
+from services.polling import fetch_option_premiums
 
 router = APIRouter()
 
@@ -314,12 +315,24 @@ async def get_option_price_history(
     db: Session = Depends(get_db)
 ):
     try:
+        print(f"Fetching history for watchlist_id: {watchlist_id}")  # Debug log
+        
+        # First verify the watchlist item exists
+        watchlist_item = db.query(WatchlistItem).filter(
+            WatchlistItem.id == watchlist_id
+        ).first()
+        
+        if not watchlist_item:
+            raise HTTPException(status_code=404, detail="Watchlist item not found")
+
         history = (
             db.query(OptionPremiumHistory)
             .filter(OptionPremiumHistory.watchlist_id == watchlist_id)
             .order_by(OptionPremiumHistory.recorded_at.asc())
             .all()
         )
+        
+        print(f"Found {len(history)} history records")  # Debug log
         
         if not history:
             raise HTTPException(status_code=404, detail="No price history found")
@@ -334,3 +347,11 @@ async def get_option_price_history(
     except Exception as e:
         print(f"Error fetching option history: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/trigger_polling/")
+async def trigger_polling():
+    try:
+        await fetch_option_premiums()
+        return {"message": "Polling triggered successfully"}
+    except Exception as e:
+        return {"error": str(e)}

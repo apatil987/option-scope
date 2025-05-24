@@ -204,7 +204,13 @@ export default function Watchlist() {
                   color: "#1976d2",
                   padding: "10px 0"
                 }}
-                onClick={() => navigate(`/search?symbol=${item.symbol}`)}
+                onClick={() => {
+                  if (view === "options") {
+                    navigate(`/search?symbol=${item.symbol}&showOptions=true&strike=${item.strike}&type=${item.option_type}&expiration=${item.expiration}`);
+                  } else {
+                    navigate(`/search?symbol=${item.symbol}`);
+                  }
+                }}
               >
                 {item.symbol}
               </td>
@@ -292,7 +298,7 @@ export default function Watchlist() {
       {view === "options" && selectedOption && (
         <div style={{ marginTop: "20px" }}>
           <OptionPriceChart
-            contractSymbol={selectedOption.contract_symbol}
+            watchlistId={selectedOption.id}  // Changed from contract_symbol
             ticker={selectedOption.symbol}
             strike={selectedOption.strike}
             expiration={selectedOption.expiration}

@@ -69,10 +69,56 @@ export default function Search() {
   // Handle URL query parameter
   useEffect(() => {
     const symbolFromUrl = searchParams.get("symbol");
-    if (symbolFromUrl) {
-      setSymbol(symbolFromUrl);
-      fetchStockData(symbolFromUrl);
-    }
+    const showOptionsParam = searchParams.get("showOptions");
+    const strikeParam = searchParams.get("strike");
+    const typeParam = searchParams.get("type");
+    const expirationParam = searchParams.get("expiration");
+
+    console.log('URL params:', { 
+      symbolFromUrl, 
+      showOptionsParam, 
+      strikeParam, 
+      typeParam, 
+      expirationParam 
+    });
+
+    const loadData = async () => {
+      if (symbolFromUrl) {
+        try {
+          setSymbol(symbolFromUrl);
+          await fetchStockData(symbolFromUrl);
+          
+          if (showOptionsParam === "true") {
+            // Set all option-related states before fetching options
+            setShowOptions(true);
+            setOptionType(typeParam === "puts" ? "puts" : "calls");
+            setSelectedExpiration(expirationParam); // Set this before fetchOptionData
+            setFilters(prev => ({
+              ...prev,
+              minStrike: strikeParam || '',
+              maxStrike: ''
+            }));
+
+            // Modify fetchOptionData to use the URL expiration
+            const response = await fetch(
+              `http://127.0.0.1:8000/options/${symbolFromUrl.toUpperCase()}?expiration=${expirationParam || ''}`
+            );
+            
+            if (!response.ok) {
+              throw new Error('Failed to fetch options data');
+            }
+
+            const data = await response.json();
+            setOptionData(data);
+          }
+        } catch (error) {
+          console.error("Error in loadData:", error);
+          setError(error.message);
+        }
+      }
+    };
+
+    loadData();
   }, [searchParams]);
 
   // Modified fetchStockData to handle both URL params and button click
@@ -97,27 +143,37 @@ export default function Search() {
     }
   };
 
-  const fetchOptionData = async () => {
-    if (!stockData) {
-      alert("Please search for a valid stock before viewing options.");
+  // Update the fetchOptionData function
+  const fetchOptionData = async (symbolToUse = symbol, expirationToUse = selectedExpiration) => {
+    console.log('Fetching options with:', { symbolToUse, expirationToUse, stockData }); // Debug log
+
+    if (!symbolToUse) {
+      console.error('No symbol provided for options fetch');
       return;
     }
+
     try {
-      const response = await fetch(`http://127.0.0.1:8000/options/${symbol.toUpperCase()}?expiration=${selectedExpiration}`);
+      const url = `http://127.0.0.1:8000/options/${symbolToUse.toUpperCase()}?expiration=${expirationToUse || ''}`;
+      console.log('Fetching from URL:', url); // Debug log
+
+      const response = await fetch(url);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Failed to fetch options data');
       }
-      setError('');
+
       const data = await response.json();
+      console.log('Received options data:', data); // Debug log
+
       setOptionData(data);
       setShowOptions(true);
 
-      // Set the default expiration date if not already set
-      if (!selectedExpiration && data.expirations.length > 0) {
+      // Set the default expiration date if needed
+      if (!selectedExpiration && data.expirations && data.expirations.length > 0) {
         setSelectedExpiration(data.expirations[0]);
       }
     } catch (error) {
+      console.error('Options fetch error:', error); // Debug log
       setError(`Error: ${error.message}`);
       setOptionData(null);
       setShowOptions(false);
