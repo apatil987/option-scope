@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import TradingViewChart from '../components/TradingViewChart';
 import { auth } from '../firebase';
 
 export default function Search() {
+  const [searchParams] = useSearchParams();
   const [symbol, setSymbol] = useState('');
   const [stockData, setStockData] = useState(null);
   const [optionData, setOptionData] = useState(null);
@@ -64,9 +66,22 @@ export default function Search() {
     }
   }, [selectedExpiration, optionType]);
 
-  const fetchStockData = async () => {
+  // Handle URL query parameter
+  useEffect(() => {
+    const symbolFromUrl = searchParams.get("symbol");
+    if (symbolFromUrl) {
+      setSymbol(symbolFromUrl);
+      fetchStockData(symbolFromUrl);
+    }
+  }, [searchParams]);
+
+  // Modified fetchStockData to handle both URL params and button click
+  const fetchStockData = async (symbolToFetch = null) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/stocks/${symbol.toUpperCase()}`);
+      const searchSymbol = symbolToFetch || symbol; // Use parameter or state
+      if (!searchSymbol) return; // Guard against empty searches
+
+      const response = await fetch(`http://127.0.0.1:8000/stocks/${searchSymbol.toUpperCase()}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Invalid ticker');
@@ -231,8 +246,12 @@ export default function Search() {
   return (
     <div style={{ textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
       <h1>OptiVue: Stock Lookup</h1>
-      <input value={symbol} onChange={e => setSymbol(e.target.value)} placeholder="Ticker" />
-      <button onClick={fetchStockData}>Search</button>
+      <input 
+        value={symbol} 
+        onChange={e => setSymbol(e.target.value)} 
+        placeholder="Ticker" 
+      />
+      <button onClick={() => fetchStockData()}>Search</button>
       <button onClick={() => setShowChart(!showChart)}>
         {showChart ? 'Hide Chart' : 'Show Chart'}
       </button>
