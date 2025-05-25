@@ -191,7 +191,7 @@ def remove_from_watchlist(
     db: Session = Depends(get_db)
 ):
     try:
-        print(f"Removing item: {symbol} {option_type} {strike} {expiration}")  # Debug log
+        # print(f"Removing item: {symbol} {option_type} {strike} {expiration}")  # Debug log
         
         # Build base query
         query = db.query(WatchlistItem).filter(
@@ -315,7 +315,7 @@ async def get_option_price_history(
     db: Session = Depends(get_db)
 ):
     try:
-        print(f"Fetching history for watchlist_id: {watchlist_id}")  # Debug log
+        #print(f"Fetching history for watchlist_id: {watchlist_id}")  # Debug log
         
         # First verify the watchlist item exists
         watchlist_item = db.query(WatchlistItem).filter(
@@ -332,7 +332,7 @@ async def get_option_price_history(
             .all()
         )
         
-        print(f"Found {len(history)} history records")  # Debug log
+        #print(f"Found {len(history)} history records")  # Debug log
         
         if not history:
             raise HTTPException(status_code=404, detail="No price history found")
@@ -355,3 +355,5 @@ async def trigger_polling():
         return {"message": "Polling triggered successfully"}
     except Exception as e:
         return {"error": str(e)}
+    
+    

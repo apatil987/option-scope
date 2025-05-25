@@ -44,11 +44,12 @@ class UserProfile(BaseModel):
     class Config:
         from_attributes = True
 
+
 class OptionPremiumHistory(Base):
     __tablename__ = "option_premium_history"
 
     id = Column(Integer, primary_key=True, index=True)
-    watchlist_id = Column(Integer, index=True)  # Add this field
+    watchlist_id = Column(Integer, index=True)  
     firebase_uid = Column(String, index=True)
     contract_symbol = Column(String)
     ticker = Column(String)

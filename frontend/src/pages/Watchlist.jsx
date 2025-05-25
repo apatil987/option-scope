@@ -11,7 +11,7 @@ export default function Watchlist() {
   const [view, setView] = useState("stocks");
   const [sortOption, setSortOption] = useState("alphabetical");
   const [stockDataMap, setStockDataMap] = useState({});
-  const [timeInterval, setTimeInterval] = useState("1d"); // Change the default timeInterval to "1d"
+  const [timeInterval, setTimeInterval] = useState("1d"); 
   const [selectedOption, setSelectedOption] = useState(null);
   const navigate = useNavigate();
 

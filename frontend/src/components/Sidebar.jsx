@@ -22,10 +22,12 @@ const Sidebar = forwardRef((props, ref) => {
   }));
 
   useEffect(() => {
+    // Runs any time theres login/logout
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
 
+        // Register user in backend if not already registered
         try {
           await fetch("http://127.0.0.1:8000/register_user/", {
             method: "POST",
@@ -40,6 +42,7 @@ const Sidebar = forwardRef((props, ref) => {
           console.error("Registration error:", err);
         }
 
+        // Fetch user profile from backend
         try {
           const res = await fetch(`http://127.0.0.1:8000/user_profile/${currentUser.uid}`);
           const data = await res.json();
@@ -56,6 +59,7 @@ const Sidebar = forwardRef((props, ref) => {
     return () => unsubscribe();
   }, []);
 
+  
   const handleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, provider);

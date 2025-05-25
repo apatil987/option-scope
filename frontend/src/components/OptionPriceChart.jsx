@@ -44,7 +44,7 @@ export default function OptionPriceChart({ watchlistId, ticker, strike, expirati
         setData(formattedData);
         setError(null);
       } catch (err) {
-        console.error("Error fetching option price history:", err);
+        console.error("Option price history is empty. Premium is polled every 30 minutes. Please try again later", err);
         setError(err.message);
       } finally {
         setIsLoading(false);
@@ -102,7 +102,7 @@ export default function OptionPriceChart({ watchlistId, ticker, strike, expirati
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div>Error: {error} Option price history is empty. Premium is polled every 30 minutes. Please try again later </div>;
   }
 
   if (data.length === 0) {

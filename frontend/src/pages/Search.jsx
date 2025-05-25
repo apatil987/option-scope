@@ -14,6 +14,7 @@ export default function Search() {
   const [error, setError] = useState('');
   const [showChart, setShowChart] = useState(false);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); // New loading state
 
   // Separate watchlists for stocks and options
   const [stockWatchlist, setStockWatchlist] = useState([]);
@@ -145,13 +146,12 @@ export default function Search() {
 
   // Update the fetchOptionData function
   const fetchOptionData = async (symbolToUse = symbol, expirationToUse = selectedExpiration) => {
-    console.log('Fetching options with:', { symbolToUse, expirationToUse, stockData }); // Debug log
-
     if (!symbolToUse) {
       console.error('No symbol provided for options fetch');
       return;
     }
 
+    setIsLoading(true);
     try {
       const url = `http://127.0.0.1:8000/options/${symbolToUse.toUpperCase()}?expiration=${expirationToUse || ''}`;
       console.log('Fetching from URL:', url); // Debug log
@@ -177,6 +177,8 @@ export default function Search() {
       setError(`Error: ${error.message}`);
       setOptionData(null);
       setShowOptions(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -305,111 +307,404 @@ export default function Search() {
   };
 
   return (
-    <div style={{ textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
-      <h1>OptiVue: Stock Lookup</h1>
-      <input 
-        value={symbol} 
-        onChange={e => setSymbol(e.target.value)} 
-        placeholder="Ticker" 
-      />
-      <button onClick={() => fetchStockData()}>Search</button>
-      <button onClick={() => setShowChart(!showChart)}>
-        {showChart ? 'Hide Chart' : 'Show Chart'}
-      </button>
-      
-      {stockData && (
-        <div>
-          {/* Always show add/remove stock button */}
-          {isStockInWatchlist ? (
-            <button onClick={handleRemoveStock}>❌ Remove Stock from Watchlist</button>
-          ) : (
-            <button onClick={handleAddStock}>⭐ Add Stock to Watchlist</button>
-          )}
+    <div style={{ 
+      maxWidth: '1200px', 
+      margin: '0 auto', 
+      padding: '20px',
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '15px',
+        marginBottom: '30px'
+      }}>
+        <h1 style={{ 
+          margin: '0',
+          fontSize: '24px',
+          color: '#1a1a1a'
+        }}>
+          OptiVue: Stock Lookup
+        </h1>
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          flex: 1
+        }}>
+          <input 
+            value={symbol} 
+            onChange={e => setSymbol(e.target.value)} 
+            placeholder="Enter ticker symbol..." 
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #ddd',
+              fontSize: '14px',
+              width: '200px'
+            }}
+          />
+          <button 
+            onClick={() => fetchStockData()}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#007AFF',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            Search
+          </button>
+          <button 
+            onClick={() => setShowChart(!showChart)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: showChart ? '#FF3B30' : '#34C759',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            {showChart ? 'Hide Chart' : 'Show Chart'}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ 
+          color: '#FF3B30',
+          backgroundColor: '#FFE5E5',
+          padding: '12px',
+          borderRadius: '6px',
+          marginBottom: '20px'
+        }}>
+          {error}
         </div>
       )}
 
-      {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
+      {stockData && (
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          marginBottom: '24px'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px'
+          }}>
+            <div>
+              <h2 style={{ margin: '0', fontSize: '28px' }}>{stockData.symbol}</h2>
+              <div style={{ 
+                fontSize: '24px',
+                fontWeight: '500',
+                marginTop: '8px'
+              }}>
+                ${stockData.current_price}
+                <span style={{ 
+                  color: stockData.price_change >= 0 ? '#34C759' : '#FF3B30',
+                  fontSize: '16px',
+                  marginLeft: '12px'
+                }}>
+                  {stockData.price_change >= 0 ? '↑' : '↓'} ${Math.abs(stockData.price_change)} ({stockData.percent_change.toFixed(2)}%)
+                </span>
+              </div>
+            </div>
+            {isStockInWatchlist ? (
+              <button 
+                onClick={handleRemoveStock}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#FF3B30',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                ❌ Remove from Watchlist
+              </button>
+            ) : (
+              <button 
+                onClick={handleAddStock}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#34C759',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                ⭐ Add to Watchlist
+              </button>
+            )}
+          </div>
+
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '20px',
+            marginBottom: '20px'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ color: '#666', fontSize: '14px' }}>Previous Close</div>
+              <div style={{ fontSize: '18px', fontWeight: '500' }}>${stockData.previous_close}</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ color: '#666', fontSize: '14px' }}>Volume</div>
+              <div style={{ fontSize: '18px', fontWeight: '500' }}>{stockData.volume.toLocaleString()}</div>
+            </div>
+          </div>
+
+          <button 
+            onClick={() => { fetchOptionData(); setShowOptions(true); }}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: '#007AFF',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500'
+            }}
+          >
+            View Options Chain
+          </button>
+        </div>
+      )}
+
       {showChart && symbol && (
-        <div style={{ marginTop: '20px' }}>
+        <div style={{ 
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          marginBottom: '24px'
+        }}>
           <TradingViewChart symbol={symbol.toUpperCase()} />
         </div>
       )}
 
-      {stockData && (
-        <div style={{ marginTop: '20px' }}>
-          <h2>{stockData.symbol}</h2>
-          <p>Current Price: ${stockData.current_price}</p>
-          <p>Previous Close: ${stockData.previous_close}</p>
-          <p>Change: ${stockData.price_change} ({stockData.percent_change.toFixed(2)}%)</p>
-          <p>Volume: {stockData.volume.toLocaleString()}</p>
-          <button onClick={() => { fetchOptionData(); setShowOptions(true); }}>View Options</button>
-
-          {showOptions && optionData && (
-            <div style={{ marginTop: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                <label>Strike Min: <input type="number" value={filters.minStrike} onChange={e => setFilters({ ...filters, minStrike: e.target.value })} /></label>
-                <label>Strike Max: <input type="number" value={filters.maxStrike} onChange={e => setFilters({ ...filters, maxStrike: e.target.value })} /></label>
-                <label>Volume &gt; <input type="number" value={filters.minVolume} onChange={e => setFilters({ ...filters, minVolume: e.target.value })} /></label>
-                <label>IV &lt; <input type="number" value={filters.maxIV} onChange={e => setFilters({ ...filters, maxIV: e.target.value })} /></label>
-                <label><input type="checkbox" checked={filters.itmOnly} onChange={e => setFilters({ ...filters, itmOnly: e.target.checked })} /> ITM Only</label>
-              </div>
-              <div style={{ marginBottom: '10px' }}>
-                <label>
-                  Expiration:
-                  <select 
-                    value={selectedExpiration} 
-                    onChange={e => setSelectedExpiration(e.target.value)}
-                  >
-                    {optionData?.expirations.map(exp => (
-                      <option key={exp} value={exp}>{exp}</option>
-                    ))}
-                  </select>
-                </label>
-                <label style={{ marginLeft: '10px' }}>
-                  Type:
-                  <select value={optionType} onChange={e => setOptionType(e.target.value)}>
-                    <option value="calls">Calls</option>
-                    <option value="puts">Puts</option>
-                  </select>
-                </label>
-              </div>
-
-              <h3>{optionType === 'calls' ? 'Calls' : 'Puts'} Expiring {selectedExpiration}</h3>
-              <table style={{ margin: 'auto', borderCollapse: 'collapse', marginTop: '10px' }}>
-                <thead>
-                  <tr>
-                    <th>Strike</th><th>Bid</th><th>Ask</th><th>IV</th><th>OI</th><th>Volume</th><th>ITM</th><th>+Watch</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {applyFilters(optionData[optionType]).map((opt, idx) => (
-                    <tr key={idx}>
-                      <td>{opt.strike}</td>
-                      <td>{opt.bid}</td>
-                      <td>{opt.ask}</td>
-                      <td>{(opt.impliedVolatility * 100).toFixed(2)}%</td>
-                      <td>{opt.openInterest}</td>
-                      <td>{opt.volume}</td>
-                      <td>{opt.inTheMoney ? '✅' : ''}</td>
-                      <td>
-                        {isOptionInWatchlist(opt, optionType) ? (
-                          <button onClick={() => handleRemoveFromWatchlist(opt, optionType)}>
-                            ❌ Remove
-                          </button>
-                        ) : (
-                          <button onClick={() => handleAddToWatchlist(opt, optionType)}>
-                            ⭐ Add
-                          </button>
-                        )}
-                      </td>
-                    </tr>
+      {showOptions && (
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>Loading options data...</div>
+          ) : optionData && optionData[optionType] ? (
+            <>
+              <div style={{ 
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '20px',
+                marginBottom: '24px'
+              }}>
+                <select 
+                  value={selectedExpiration} 
+                  onChange={e => setSelectedExpiration(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                >
+                  {optionData?.expirations.map(exp => (
+                    <option key={exp} value={exp}>{exp}</option>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </select>
+
+                <select 
+                  value={optionType} 
+                  onChange={e => setOptionType(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                >
+                  <option value="calls">Calls</option>
+                  <option value="puts">Puts</option>
+                </select>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '15px',
+                marginBottom: '24px'
+              }}>
+                <input
+                  type="number"
+                  placeholder="Min Strike"
+                  value={filters.minStrike}
+                  onChange={e => setFilters({ ...filters, minStrike: e.target.value })}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                />
+                <input
+                  type="number"
+                  placeholder="Max Strike"
+                  value={filters.maxStrike}
+                  onChange={e => setFilters({ ...filters, maxStrike: e.target.value })}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                />
+                <input
+                  type="number"
+                  placeholder="Min Volume"
+                  value={filters.minVolume}
+                  onChange={e => setFilters({ ...filters, minVolume: e.target.value })}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                />
+                <input
+                  type="number"
+                  placeholder="Max IV %"
+                  value={filters.maxIV}
+                  onChange={e => setFilters({ ...filters, maxIV: e.target.value })}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                />
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={filters.itmOnly}
+                    onChange={e => setFilters({ ...filters, itmOnly: e.target.checked })}
+                  />
+                  ITM Only
+                </label>
+              </div>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ 
+                  width: '100%',
+                  borderCollapse: 'separate',
+                  borderSpacing: '0',
+                  fontSize: '14px'
+                }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f5f5f7' }}>
+                      <th style={tableHeaderStyle}>Strike</th>
+                      <th style={tableHeaderStyle}>Bid</th>
+                      <th style={tableHeaderStyle}>Ask</th>
+                      <th style={tableHeaderStyle}>IV</th>
+                      <th style={tableHeaderStyle}>OI</th>
+                      <th style={tableHeaderStyle}>Volume</th>
+                      <th style={tableHeaderStyle}>ITM</th>
+                      <th style={tableHeaderStyle}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {optionData[optionType] && applyFilters(optionData[optionType]).map((opt, idx) => (
+                      <tr key={idx} style={{
+                        backgroundColor: idx % 2 === 0 ? 'white' : '#f9f9f9'
+                      }}>
+                        <td style={tableCellStyle}>${opt.strike}</td>
+                        <td style={tableCellStyle}>${opt.bid || 0}</td>
+                        <td style={tableCellStyle}>${opt.ask || 0}</td>
+                        <td style={tableCellStyle}>{((opt.impliedVolatility || 0) * 100).toFixed(2)}%</td>
+                        <td style={tableCellStyle}>{(opt.openInterest || 0).toLocaleString()}</td>
+                        <td style={tableCellStyle}>{(opt.volume || 0).toLocaleString()}</td>
+                        <td style={tableCellStyle}>{opt.inTheMoney ? '✅' : ''}</td>
+                        <td style={tableCellStyle}>
+                          {isOptionInWatchlist(opt, optionType) ? (
+                            <button 
+                              onClick={() => handleRemoveFromWatchlist(opt, optionType)}
+                              style={removeButtonStyle}
+                            >
+                              ❌ Remove
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleAddToWatchlist(opt, optionType)}
+                              style={addButtonStyle}
+                            >
+                              ⭐ Add
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '20px' }}>No options data available</div>
           )}
         </div>
       )}
     </div>
   );
 }
+
+// Add these style objects at the end of the file
+const tableHeaderStyle = {
+  padding: '12px 16px',
+  textAlign: 'left',
+  fontWeight: '500',
+  color: '#666',
+  borderBottom: '1px solid #ddd'
+};
+
+const tableCellStyle = {
+  padding: '12px 16px',
+  borderBottom: '1px solid #eee'
+};
+
+const addButtonStyle = {
+  padding: '6px 12px',
+  backgroundColor: '#34C759',
+  color: 'white',
+  border: 'none',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  fontSize: '12px'
+};
+
+const removeButtonStyle = {
+  padding: '6px 12px',
+  backgroundColor: '#FF3B30',
+  color: 'white',
+  border: 'none',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  fontSize: '12px'
+};
