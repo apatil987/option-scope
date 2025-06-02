@@ -48,7 +48,7 @@ export default function Watchlist() {
             console.error(`Error fetching data for ${item.symbol}:`, err);
           }
         }
-        // Replace the stockDataMap so that the chart range change shows new data
+        
         setStockDataMap(newStockData);
       };
       fetchStockData();

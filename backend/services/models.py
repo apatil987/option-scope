@@ -65,3 +65,18 @@ class WatchlistRequest(BaseModel):
     option_type: str | None = None
     strike: float | None = None
     expiration: str | None = None
+
+class OptionEVHistory(Base):
+    __tablename__ = "option_ev_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    watchlist_id = Column(Integer, index=True)
+    firebase_uid = Column(String, index=True)
+    contract_symbol = Column(String)
+    ev = Column(Float)
+    probability = Column(Float)
+    delta = Column(Float)
+    max_gain = Column(Float)
+    max_loss = Column(Float)
+    breakeven = Column(Float)
+    recorded_at = Column(DateTime, default=datetime.now(ZoneInfo("UTC")))

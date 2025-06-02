@@ -2,12 +2,15 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import Session
 from services.db import SessionLocal
-from services.models import WatchlistItem, OptionPremiumHistory
+from services.models import WatchlistItem, OptionPremiumHistory, OptionEVHistory
 from datetime import datetime, timezone, time
 import yfinance as yf
 import pytz
 import holidays
 import httpx
+from math import log, sqrt
+from scipy.stats import norm
+from zoneinfo import ZoneInfo
 
 us_holidays = holidays.US()
 
@@ -17,11 +20,16 @@ class PollingManager:
         
     async def start(self):
         if not self.scheduler.running:
-            # Schedule polling job with a cron trigger for weekdays 
+            # Schedule both premium and EV polling
             self.scheduler.add_job(
                 self.polling_job_wrapper,
                 CronTrigger(day_of_week="mon-fri", hour="9-15", minute="*/30"),
                 id="fetch_options"
+            )
+            self.scheduler.add_job(
+                fetch_option_ev,
+                CronTrigger(day_of_week="mon-fri", hour="9-15", minute="*/30"),
+                id="fetch_ev"
             )
             self.scheduler.start()
             
@@ -35,6 +43,7 @@ class PollingManager:
         if self.is_trading_hours(now):
             print(f"Polling triggered at {now}")
             await fetch_option_premiums()
+            await fetch_option_ev()
         else:
             print(f"Skipping polling at {now} (outside trading hours)")
 
@@ -128,5 +137,122 @@ async def fetch_option_premiums():
     finally:
         db.close()
 
-# Create a single instance of the PollingManager
+async def fetch_option_ev():
+    """Fetch and store EV calculations for all options in watchlists"""
+    db = SessionLocal()
+    try:
+        print("\n=== Starting EV Calculations ===")
+        
+        watchlist_items = db.query(WatchlistItem).filter(
+            WatchlistItem.option_type.isnot(None),
+            WatchlistItem.strike.isnot(None),
+            WatchlistItem.expiration.isnot(None),
+            WatchlistItem.expiration != ''
+        ).all()
+        
+        print(f"Found {len(watchlist_items)} options to process")
+
+        for item in watchlist_items:
+            try:
+                print(f"\nProcessing {item.symbol} {item.option_type} {item.strike} {item.expiration}")
+                
+                # Get option details
+                ticker = yf.Ticker(item.symbol)
+                stock_price = ticker.history(period="1d")["Close"].iloc[-1]
+                print(f"Current stock price: {stock_price}")
+                
+                # Get option chain
+                print("Fetching option chain...")
+                chain = ticker.option_chain(item.expiration)
+                options = chain.calls if item.option_type.lower() == "calls" else chain.puts
+                print(f"Found {len(options)} options in the chain")
+                
+                # Find our specific option
+                matching_options = options[options["strike"] == item.strike]
+                if matching_options.empty:
+                    print(f"No matching option found for strike {item.strike}")
+                    continue
+                    
+                option = matching_options.iloc[0]
+                print(f"Found matching option with IV: {option['impliedVolatility']}")
+                
+                # Generate contract symbol
+                contract_symbol = f"{item.symbol}{item.expiration}{item.strike}{item.option_type}"
+                print(f"Contract symbol: {contract_symbol}")
+                
+                # Calculate time to expiration
+                expiration_date = datetime.strptime(item.expiration, "%Y-%m-%d")
+                current_date = datetime.now()
+                T = (expiration_date - current_date).days / 365
+                print(f"Time to expiration (years): {T}")
+
+                if T <= 0:
+                    print(f"Skipping expired option: {contract_symbol}")
+                    continue
+
+                # Calculate EV components
+                sigma = option["impliedVolatility"]
+                r = 0.05  # risk-free rate
+                
+                print("Calculating Black-Scholes components...")
+                d1 = (log(stock_price / item.strike) + (r + 0.5 * sigma ** 2) * T) / (sigma * sqrt(T))
+                d2 = d1 - sigma * sqrt(T)
+                print(f"d1: {d1}, d2: {d2}")
+
+                if item.option_type.lower() == "calls":
+                    p_win = norm.cdf(d2)
+                    delta = norm.cdf(d1)
+                    breakeven = item.strike + option["lastPrice"]
+                    est_price = item.strike + (sigma * stock_price)
+                    profit_itm = max(0, est_price - item.strike - option["lastPrice"])
+                else:
+                    p_win = norm.cdf(-d2)
+                    delta = -norm.cdf(-d1)
+                    breakeven = item.strike - option["lastPrice"]
+                    est_price = item.strike - (sigma * stock_price)
+                    profit_itm = max(0, item.strike - est_price - option["lastPrice"])
+
+                loss = option["lastPrice"]
+                ev = (p_win * profit_itm) - ((1 - p_win) * loss)
+
+                print(f"Calculation results:")
+                print(f"- EV: {ev}")
+                print(f"- P(win): {p_win}")
+                print(f"- Delta: {delta}")
+                print(f"- Max Gain: {profit_itm}")
+                print(f"- Max Loss: {loss}")
+                print(f"- Breakeven: {breakeven}")
+
+                print("Creating EV history record...")
+                # Convert NumPy values to Python native types before creating DB record
+                ev_record = OptionEVHistory(
+                    watchlist_id=item.id,
+                    firebase_uid=item.firebase_uid,
+                    contract_symbol=contract_symbol,
+                    ev=float(ev),  # Convert to native float
+                    probability=float(p_win),
+                    delta=float(delta),
+                    max_gain=float(profit_itm),
+                    max_loss=float(loss),
+                    breakeven=float(breakeven),
+                    recorded_at=datetime.now(ZoneInfo("UTC"))
+                )
+                
+                db.add(ev_record)
+                db.commit()
+                print(f"Saved EV record for {contract_symbol}")
+
+            except Exception as e:
+                print(f"Error processing option: {str(e)}")
+                db.rollback()  # Roll back on error
+                continue
+
+    except Exception as e:
+        print(f"Error in EV polling: {str(e)}")
+        db.rollback()
+    finally:
+        db.close()
+        print("=== EV Calculations Complete ===\n")
+
+# Create and export the polling manager instance
 polling_manager = PollingManager()

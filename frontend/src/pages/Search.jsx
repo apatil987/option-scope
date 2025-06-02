@@ -48,7 +48,8 @@ export default function Search() {
 
   useEffect(() => {
     if (optionsState.showOptions && stockData) {
-      console.log('Fetching options for:', stockData.symbol);       const fetchOptions = async () => {
+      console.log('Fetching options for:', stockData.symbol);       
+      const fetchOptions = async () => {
         try {
           await optionsState.fetchOptionData(stockData.symbol);
           console.log('Options fetched successfully');         } catch (error) {
@@ -82,9 +83,10 @@ export default function Search() {
           await fetchStockData(symbolFromUrl);
           
           if (showOptionsParam === "true") {
-                        optionsState.setShowOptions(true);
+            optionsState.setShowOptions(true);
             optionsState.setOptionType(typeParam === "puts" ? "puts" : "calls");
-            optionsState.setSelectedExpiration(expirationParam);             optionsState.setFilters(prev => ({
+            optionsState.setSelectedExpiration(expirationParam);             
+            optionsState.setFilters(prev => ({
               ...prev,
               minStrike: strikeParam || '',
               maxStrike: ''

@@ -5,11 +5,13 @@ from zoneinfo import ZoneInfo
 from pydantic import BaseModel
 from typing import Optional
 import yfinance as yf
+from math import log, sqrt
+from scipy.stats import norm
 
 from services.db import SessionLocal
-from services.models import User, UserCreate, WatchlistItem, OptionPremiumHistory
+from services.models import User, UserCreate, WatchlistItem, OptionPremiumHistory, OptionEVHistory
 from services.stock_service import get_stock_quote, get_option_chain
-from services.polling import fetch_option_premiums
+from services.polling import fetch_option_premiums, fetch_option_ev
 
 router = APIRouter()
 
@@ -351,9 +353,114 @@ async def get_option_price_history(
 @router.post("/trigger_polling/")
 async def trigger_polling():
     try:
-        await fetch_option_premiums()
+        await fetch_option_ev()
+        #await fetch_option_premiums()
         return {"message": "Polling triggered successfully"}
     except Exception as e:
         return {"error": str(e)}
-    
-    
+
+@router.post("/calculate_ev")
+def calculate_ev(
+    S: float = Body(...),  # current stock price
+    K: float = Body(...),  # strike
+    T: float = Body(...),  # time in years
+    r: float = Body(...),  # risk-free rate
+    sigma: float = Body(...),  # implied volatility (decimal)
+    option_type: str = Body(...),  # "call" or "put"
+    premium: float = Body(...),  # option cost
+    price_itm: float = Body(None),  # expected stock price if ITM (optional)
+):
+    try:
+        if T <= 0 or sigma <= 0:
+            raise ValueError("Invalid time or volatility")
+
+        # Calculate d1 and d2
+        d1 = (log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * sqrt(T))
+        d2 = d1 - sigma * sqrt(T)
+
+        # Handle calls and puts differently
+        if option_type.lower() == "calls":
+            p_win = norm.cdf(d2)        # probability of expiring ITM
+            delta = norm.cdf(d1)        # option's delta
+            breakeven = K + premium
+            est_price = price_itm if price_itm else K + (sigma * S)  # estimate ITM price
+            profit_itm = max(0, est_price - K - premium)
+        elif option_type.lower() == "puts":
+            p_win = norm.cdf(-d2)
+            delta = -norm.cdf(-d1)
+            breakeven = K - premium
+            est_price = price_itm if price_itm else K - (sigma * S)
+            profit_itm = max(0, K - est_price - premium)
+        else:
+            raise ValueError("Invalid option type: must be 'call' or 'put'")
+
+        loss = premium
+        ev = (p_win * profit_itm) - ((1 - p_win) * loss)
+
+        return {
+            "ev": round(ev, 4),
+            "probability": round(p_win, 4),
+            "delta": round(delta, 4),
+            "max_gain": round(profit_itm, 4),
+            "max_loss": round(loss, 4),
+            "breakeven": round(breakeven, 4),
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/option_details/{symbol}/{expiration}/{strike}/{type}")
+def get_option_details(symbol: str, expiration: str, strike: float, type: str):
+    try:
+        ticker = yf.Ticker(symbol)
+        option_chain = ticker.option_chain(expiration)
+        options = option_chain.calls if type == "call" else option_chain.puts
+
+        option = options[options["strike"] == strike]
+        if option.empty:
+            raise HTTPException(status_code=404, detail="Option not found")
+
+        premium = option.iloc[0]["lastPrice"]
+        iv = option.iloc[0]["impliedVolatility"]
+        stock_price = ticker.history(period="1d")["Close"].iloc[-1]
+
+        return {
+            "premium": premium,
+            "iv": iv * 100,  # Convert to percentage
+            "stock_price": stock_price,
+            "price_itm": stock_price + 10 if type == "call" else stock_price - 10,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/option_ev_history/{watchlist_id}")
+async def get_option_ev_history(
+    watchlist_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        history = (
+            db.query(OptionEVHistory)
+            .filter(OptionEVHistory.watchlist_id == watchlist_id)
+            .order_by(OptionEVHistory.recorded_at.asc())
+            .all()
+        )
+        
+        if not history:
+            raise HTTPException(status_code=404, detail="No EV history found")
+            
+        return [
+            {
+                "ev": float(record.ev),
+                "probability": float(record.probability),
+                "delta": float(record.delta),
+                "max_gain": float(record.max_gain),
+                "max_loss": float(record.max_loss),
+                "breakeven": float(record.breakeven),
+                "recorded_at": record.recorded_at.isoformat(),
+            }
+            for record in history
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

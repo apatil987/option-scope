@@ -39,7 +39,8 @@ export const useOptions = () => {
       setOptionData(data);
       console.log('Set option data:', data);       
       if (!selectedExpiration && data.expirations && data.expirations.length > 0) {
-        console.log('Setting initial expiration:', data.expirations[0]);         setSelectedExpiration(data.expirations[0]);
+        console.log('Setting initial expiration:', data.expirations[0]);         
+        setSelectedExpiration(data.expirations[0]);
       }
 
       return data;
@@ -141,13 +142,15 @@ export const useOptions = () => {
 
     return {
     optionData,
-    setOptionData,                   selectedExpiration,
+    setOptionData,                   
+    selectedExpiration,
     optionType,
     showOptions,
     filters,
     isLoading,
     optionWatchlist,
-    setOptionWatchlist,             setSelectedExpiration,
+    setOptionWatchlist,             
+    setSelectedExpiration,
     setOptionType,
     setShowOptions,
     setFilters,

@@ -6,6 +6,8 @@ import Search from './pages/Search';
 import Login from './components/Login';
 import Settings from './pages/Settings';
 import Watchlist from './pages/Watchlist';
+import ExpectedValue from './pages/ExpectedValue';
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -21,6 +23,7 @@ function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/watchlist" element={<Watchlist />} />
+            <Route path="/expected-value" element={<ExpectedValue />} />
           </Routes>
         </div>
       </div>
