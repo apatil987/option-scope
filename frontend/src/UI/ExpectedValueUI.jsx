@@ -28,6 +28,11 @@ const EVHistoryChart = ({ watchlistId }) => {
   const chartRef = useRef(null);
 
   useEffect(() => {
+    // Cleanup previous chart instance
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
+
     const fetchEVHistory = async () => {
       try {
         const response = await fetch(`http://127.0.0.1:8000/option_ev_history/${watchlistId}`);
@@ -44,7 +49,6 @@ const EVHistoryChart = ({ watchlistId }) => {
       fetchEVHistory();
     }
 
-    // Cleanup function
     return () => {
       if (chartRef.current) {
         chartRef.current.destroy();
@@ -141,6 +145,11 @@ const ExpectedValueUI = ({
   result
 }) => {
   const [showHistory, setShowHistory] = useState(false);
+
+  // Reset chart visibility when option changes
+  useEffect(() => {
+    setShowHistory(false);
+  }, [selectedOption]);
 
   return (
     <div style={styles.container}>
@@ -309,7 +318,7 @@ const ExpectedValueUI = ({
       {showHistory && selectedOption && (
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>📈 EV History</h2>
-          <EVHistoryChart watchlistId={selectedOption.id} />
+          <EVHistoryChart key={selectedOption.id} watchlistId={selectedOption.id} />
         </section>
       )}
     </div>

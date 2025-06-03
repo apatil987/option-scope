@@ -5,6 +5,11 @@ from services.db import engine
 from services.base import Base
 from services.polling import polling_manager
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

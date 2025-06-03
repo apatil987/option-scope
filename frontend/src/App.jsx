@@ -7,6 +7,7 @@ import Login from './components/Login';
 import Settings from './pages/Settings';
 import Watchlist from './pages/Watchlist';
 import ExpectedValue from './pages/ExpectedValue';
+import GPTForecasts from './pages/GPTForecasts';
 
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/watchlist" element={<Watchlist />} />
             <Route path="/expected-value" element={<ExpectedValue />} />
+            <Route path="/gpt" element={<GPTForecasts />} />
           </Routes>
         </div>
       </div>

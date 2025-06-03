@@ -7,6 +7,8 @@ from typing import Optional
 import yfinance as yf
 from math import log, sqrt
 from scipy.stats import norm
+from openai import OpenAI
+import os
 
 from services.db import SessionLocal
 from services.models import User, UserCreate, WatchlistItem, OptionPremiumHistory, OptionEVHistory
@@ -24,6 +26,10 @@ class WatchlistRequest(BaseModel):
 
 class LastLoginUpdate(BaseModel):
     firebase_uid: str
+
+
+class GPTQuestion(BaseModel):
+    question: str
 
 def get_db():
     db = SessionLocal()
@@ -462,5 +468,52 @@ async def get_option_ev_history(
             for record in history
         ]
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/ask_gpt")
+async def ask_gpt(payload: GPTQuestion):
+    try:
+        print("Received question:", payload.question)  # Debug print
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        # Create the system message to set context
+        system_message = """You are OptiVue AI — a bold, stats-driven options trading assistant for advanced users.
+
+Your job is to analyze user prompts and deliver clear, decisive trading guidance rooted in real statistical, technical, and sentiment data.
+
+You must always:
+- Give a **direct recommendation**: Buy calls, Buy puts, Sell spread, Avoid, etc.
+- **Back it with numbers**: mention strike prices, expiration dates, premiums, implied volatility (%), delta, probability of ITM, or recent price trends.
+- Use a confident, assertive tone. Assume the user understands options Greeks, volatility, EV, and advanced strategies.
+- Include **rationale** using factors like IV trends, macro news (e.g. inflation prints, earnings, geopolitics), and recent stock behavior.
+- If the user suggests a bad trade, say so, and **recommend a better one.**
+- Never add generic disclaimers or hedging language like 'but it depends...' or 'consult a financial advisor'. Be decisive.
+
+Examples of your tone:
+- 'No — puts are the better value here. The IV is overpriced on the call side.'
+- 'Yes — the $220C expiring next Friday has upside, with breakeven at $225 and a 67% delta.'
+- 'Avoid this setup. IV crush post-earnings will eat the premium. Consider a credit spread instead.'
+
+You are here to be useful, not polite."""
+        
+        print("Sending request to OpenAI")  # Debug print
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": payload.question}
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
+        
+        print("Received response from OpenAI")  # Debug print
+        return {
+            "response": response.choices[0].message.content,
+            "status": "success"
+        }
+    except Exception as e:
+        print(f"Error in ask_gpt: {str(e)}")  # Debug print
         raise HTTPException(status_code=500, detail=str(e))
 
