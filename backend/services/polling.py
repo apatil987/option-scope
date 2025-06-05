@@ -11,6 +11,7 @@ import httpx
 from math import log, sqrt
 from scipy.stats import norm
 from zoneinfo import ZoneInfo
+from .analysis import analyze_options
 
 us_holidays = holidays.US()
 
@@ -20,6 +21,12 @@ class PollingManager:
         
     async def start(self):
         if not self.scheduler.running:
+            # Add analysis job for Sunday and Wednesday nights at 11 PM ET
+            self.scheduler.add_job(
+                analyze_options,
+                CronTrigger(day_of_week="wed,sun", hour="23", minute="0"),
+                id="analyze_options"
+            )
             # Schedule both premium and EV polling
             self.scheduler.add_job(
                 self.polling_job_wrapper,
@@ -164,7 +171,7 @@ async def fetch_option_ev():
                 # Get option chain
                 print("Fetching option chain...")
                 chain = ticker.option_chain(item.expiration)
-                options = chain.calls if item.option_type.lower() == "calls" else chain.puts
+                options = chain.calls if item.option_type.lower() == "calls" or item.option_type.lower() == "call" else chain.puts
                 print(f"Found {len(options)} options in the chain")
                 
                 # Find our specific option
@@ -199,7 +206,7 @@ async def fetch_option_ev():
                 d2 = d1 - sigma * sqrt(T)
                 print(f"d1: {d1}, d2: {d2}")
 
-                if item.option_type.lower() == "calls":
+                if item.option_type.lower() == "calls" or item.option_type.lower() == "call":
                     p_win = norm.cdf(d2)
                     delta = norm.cdf(d1)
                     breakeven = item.strike + option["lastPrice"]

@@ -80,3 +80,22 @@ class OptionEVHistory(Base):
     max_loss = Column(Float)
     breakeven = Column(Float)
     recorded_at = Column(DateTime, default=datetime.now(ZoneInfo("UTC")))
+
+class SmartOptionSuggestion(Base):
+    __tablename__ = "smart_option_suggestions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String, index=True)
+    strike = Column(Float)
+    expiration = Column(String)
+    option_type = Column(String)
+    stock_price = Column(Float)
+    ev = Column(Float)
+    probability = Column(Float)
+    delta = Column(Float)
+    max_gain = Column(Float)
+    max_loss = Column(Float)
+    breakeven = Column(Float)
+    iv = Column(Float)
+    gpt_analysis = Column(String)
+    analysis_date = Column(DateTime, default=datetime.now(ZoneInfo("UTC")))

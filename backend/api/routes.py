@@ -11,9 +11,10 @@ from openai import OpenAI
 import os
 
 from services.db import SessionLocal
-from services.models import User, UserCreate, WatchlistItem, OptionPremiumHistory, OptionEVHistory
+from services.models import User, UserCreate, WatchlistItem, OptionPremiumHistory, OptionEVHistory, SmartOptionSuggestion
 from services.stock_service import get_stock_quote, get_option_chain
 from services.polling import fetch_option_premiums, fetch_option_ev
+from services.utils import calculate_ev  # Update routes.py to use the shared function
 
 router = APIRouter()
 
@@ -385,13 +386,13 @@ def calculate_ev(
         d2 = d1 - sigma * sqrt(T)
 
         # Handle calls and puts differently
-        if option_type.lower() == "calls":
+        if option_type.lower() == "calls" or option_type.lower() == "call":
             p_win = norm.cdf(d2)        # probability of expiring ITM
             delta = norm.cdf(d1)        # option's delta
             breakeven = K + premium
             est_price = price_itm if price_itm else K + (sigma * S)  # estimate ITM price
             profit_itm = max(0, est_price - K - premium)
-        elif option_type.lower() == "puts":
+        elif option_type.lower() == "puts" or option_type.lower() == "put":
             p_win = norm.cdf(-d2)
             delta = -norm.cdf(-d1)
             breakeven = K - premium
@@ -420,7 +421,7 @@ def get_option_details(symbol: str, expiration: str, strike: float, type: str):
     try:
         ticker = yf.Ticker(symbol)
         option_chain = ticker.option_chain(expiration)
-        options = option_chain.calls if type == "call" else option_chain.puts
+        options = option_chain.calls if type == "call" or type == "calls" else option_chain.puts
 
         option = options[options["strike"] == strike]
         if option.empty:
@@ -434,7 +435,7 @@ def get_option_details(symbol: str, expiration: str, strike: float, type: str):
             "premium": premium,
             "iv": iv * 100,  # Convert to percentage
             "stock_price": stock_price,
-            "price_itm": stock_price + 10 if type == "call" else stock_price - 10,
+            "price_itm": stock_price + 10 if type == "call" or type == "calls" else stock_price - 10,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -517,3 +518,58 @@ You are here to be useful, not polite."""
         print(f"Error in ask_gpt: {str(e)}")  # Debug print
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/smart_suggestions")
+async def get_smart_suggestions(db: Session = Depends(get_db)):
+    try:
+        # Get the most recent analysis date
+        latest_analysis = db.query(
+            SmartOptionSuggestion.analysis_date
+        ).order_by(
+            SmartOptionSuggestion.analysis_date.desc()
+        ).first()
+
+        if not latest_analysis:
+            raise HTTPException(
+                status_code=404, 
+                detail="No analysis available. Analysis runs Sunday and Wednesday nights."
+            )
+
+        # Get all suggestions from the latest analysis
+        suggestions = db.query(SmartOptionSuggestion).order_by(
+        SmartOptionSuggestion.analysis_date.desc()
+        ).limit(6).all()
+
+        return [
+            {
+                "symbol": s.symbol,
+                "strike": s.strike,
+                "expiration": s.expiration,
+                "option_type": s.option_type,
+                "stock_price": s.stock_price,
+                "ev": s.ev,
+                "probability": s.probability,
+                "delta": s.delta,
+                "max_gain": s.max_gain,
+                "max_loss": s.max_loss,
+                "breakeven": s.breakeven,
+                "iv": s.iv,
+                "gpt_analysis": s.gpt_analysis,
+                "analysis_date": s.analysis_date.isoformat()
+            }
+            for s in suggestions
+        ]
+
+    except Exception as e:
+        print(f"Error fetching suggestions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/trigger_analysis")
+async def trigger_analysis():
+    """Manually trigger the options analysis"""
+    try:
+        from services.analysis import analyze_options
+        await analyze_options()
+        return {"message": "Analysis completed successfully"}
+    except Exception as e:
+        print(f"Error triggering analysis: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

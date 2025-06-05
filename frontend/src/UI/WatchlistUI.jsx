@@ -189,11 +189,11 @@ const WatchlistUI = ({
                           style={{
                             ...styles.typeTag,
                             backgroundColor:
-                              item?.option_type?.toLowerCase() === "calls"
+                              item?.option_type?.toLowerCase() === "calls" || item?.option_type?.toLowerCase() === "call"
                                 ? "#dcfce7"
                                 : "#fee2e2",
                             color:
-                              item?.option_type?.toLowerCase() === "calls"
+                              item?.option_type?.toLowerCase() === "calls" || item?.option_type?.toLowerCase() === "call"
                                 ? "#166534"
                                 : "#991b1b",
                           }}

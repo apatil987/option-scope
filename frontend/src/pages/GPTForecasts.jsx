@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { styles } from './GPTForecasts.styles';
+import SmartSuggestions from '../UI/SmartSuggestions';
+import { auth } from '../firebase';
 
 const GPTForecasts = () => {
   const [question, setQuestion] = useState('');
@@ -77,6 +79,9 @@ const GPTForecasts = () => {
           </div>
         )}
       </section>
+
+      {/* Add Smart Suggestions section */}
+      <SmartSuggestions user={auth.currentUser} />
     </div>
   );
 };
