@@ -1,0 +1,245 @@
+.fullPageBackground {
+  background-color: #0a0a23; /* Matches your container color */
+  min-height: 100vh;
+  width: 100%;
+}
+
+.container {
+  padding: 0;
+  flex: 1; /* Dynamically fills remaining space */
+  background-color: #0a0a23; /* Darker background for a sleek look */
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  background-color: #0a0a23;
+  border-bottom: 1px solid #2563eb;
+  width: 100%;
+}
+
+.logo {
+  width: 55px;
+  height: 55px;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: #60a5fa; /* Bright blue for the title */
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: #cbd5e1;
+  margin-top: 0.25rem;
+}
+
+.sectionTitle {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 2rem 0 1rem 0;
+  text-align: center;
+  color: #ffffff;
+}
+
+.topPicks {
+  width: 100%;
+  padding: 0 2rem;
+  margin-bottom: 2rem;
+}
+
+.picksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.pickCard {
+  background-color: #1e3a8a;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid #2563eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.pickCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.symbolText {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+.evText {
+  color: #22c55e;
+  font-weight: 600;
+  font-size: 1.15rem;
+}
+
+.expiryText {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.detailsText {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.showMoreButton {
+  width: 100%;
+  padding: 0.6rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.showMoreButton:hover {
+  background-color: #1d4ed8;
+}
+
+.quickActions {
+  width: 100%;
+  padding: 0 2rem;
+  margin-bottom: 2rem;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.actionButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem;
+  background-color: #1e3a8a;
+  border: 1px solid #2563eb;
+  border-radius: 12px;
+  cursor: pointer;
+  color: #ffffff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.actionButton:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.actionIcon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #60a5fa;
+}
+
+.watchlist {
+  width: 100%;
+  padding: 0 2rem;
+  margin-bottom: 2rem;
+}
+
+.watchlistHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.viewAllButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.viewAllButton:hover {
+  background-color: #1d4ed8;
+}
+
+.watchlistGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.watchlistItem {
+  background-color: #1e3a8a;
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid #2563eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.watchlistItem:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.watchlistItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.priceText {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.changeContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.changeText {
+  font-size: 1rem;
+  font-weight: 600;
+}

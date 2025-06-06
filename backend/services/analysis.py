@@ -179,25 +179,25 @@ async def analyze_options():
         # Ensure diverse stock selection
         diverse_opportunities = []
         seen_symbols = set()
-        
+
+        min_diverse_count = 4
+        num_opportunities = 6
+
         # Sort all opportunities by EV
-        sorted_opportunities = sorted(all_opportunities, 
-                                   key=lambda x: x['ev'], 
-                                   reverse=True)
-        
-        # First, add the top EV opportunity for each unique symbol
+        sorted_opportunities = sorted(all_opportunities, key=lambda x: x['ev'], reverse=True)
+
+        # Step 1: Add one opportunity per stock until we reach the minimum diversity requirement
         for opp in sorted_opportunities:
-            if len(diverse_opportunities) >= 6:
-                break
-            if opp['symbol'] not in seen_symbols:
+            if len(seen_symbols) < min_diverse_count and opp['symbol'] not in seen_symbols:
                 diverse_opportunities.append(opp)
                 seen_symbols.add(opp['symbol'])
-        
-        # If we still need more opportunities, add the highest EV remaining
-        while len(diverse_opportunities) < 6 and sorted_opportunities:
-            next_best = sorted_opportunities.pop(0)
-            if next_best not in diverse_opportunities:
-                diverse_opportunities.append(next_best)
+
+        # Step 2: Fill the remaining slots with the highest EV opportunities
+        for opp in sorted_opportunities:
+            if len(diverse_opportunities) >= num_opportunities:
+                break
+            if opp not in diverse_opportunities:
+                diverse_opportunities.append(opp)
 
         # Get market context for GPT
         spy_ticker = yf.Ticker("SPY")

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { styles } from './GPTForecasts.styles';
 import SmartSuggestions from '../UI/SmartSuggestions';
 import { auth } from '../firebase';
+import { FaRobot, FaExclamationTriangle, FaBrain, FaPaperPlane } from 'react-icons/fa';
 
 const GPTForecasts = () => {
   const [question, setQuestion] = useState('');
@@ -22,7 +23,7 @@ const GPTForecasts = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ question: question }), // Send as an object
+        body: JSON.stringify({ question: question }),
       });
 
       if (!res.ok) {
@@ -43,7 +44,10 @@ const GPTForecasts = () => {
   return (
     <div style={styles.container}>
       <section style={styles.section}>
-        <h2 style={styles.sectionTitle}>🧠 Ask GPT About Markets</h2>
+        <h2 style={styles.sectionTitle}>
+          <FaBrain style={styles.aiIcon} />
+          AI Market Analysis
+        </h2>
         
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.inputContainer}>
@@ -51,7 +55,7 @@ const GPTForecasts = () => {
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ask about market sentiment, options strategies, etc..."
+              placeholder="Analyze market trends, suggest options strategies, or get trade insights..."
               style={styles.input}
             />
             <button 
@@ -59,20 +63,34 @@ const GPTForecasts = () => {
               disabled={isLoading} 
               style={styles.button}
             >
-              {isLoading ? 'Thinking...' : 'Ask GPT'}
+              {isLoading ? (
+                <>
+                  <div style={styles.loadingSpinner} />
+                  Thinking...
+                </>
+              ) : (
+                <>
+                  <FaPaperPlane />
+                  Ask GPT
+                </>
+              )}
             </button>
           </div>
         </form>
 
         {error && (
           <div style={styles.error}>
+            <FaExclamationTriangle style={styles.warningIcon} />
             {error}
           </div>
         )}
 
         {response && (
           <div style={styles.responseContainer}>
-            <h3 style={styles.responseTitle}>GPT Response:</h3>
+            <h3 style={styles.responseTitle}>
+              <FaRobot style={styles.aiIcon} />
+              AI Response
+            </h3>
             <div style={styles.response}>
               {response}
             </div>
@@ -80,7 +98,6 @@ const GPTForecasts = () => {
         )}
       </section>
 
-      {/* Add Smart Suggestions section */}
       <SmartSuggestions user={auth.currentUser} />
     </div>
   );

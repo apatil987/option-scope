@@ -1,59 +1,238 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaSearch, FaCalculator, FaChartLine, FaLock } from 'react-icons/fa';
+import { auth, provider } from '../firebase';
+import { signInWithPopup } from 'firebase/auth';
+import logo from '../assets/logo.png';
+import styles from './Home.module.css'; // Import the CSS module
 
 export default function Home() {
-  return (
-    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', color: '#1a202c' }}>
-      <h2 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '10px' }}>Welcome to OptiVue</h2>
-      <p style={{ fontSize: '16px', color: '#4a5568' }}>Your options trading dashboard</p>
+  const [topPicks, setTopPicks] = useState([]);
+  const [watchlistStocks, setWatchlistStocks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
-      <section style={{ marginTop: '30px' }}>
-        <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '10px' }}>📊 Top Trade Recommendations</h3>
-        <div style={{
-          display: 'flex',
-          gap: '20px',
-          flexWrap: 'wrap',
-        }}>
-          {[
-            { ticker: 'TSLA', action: 'Buy Call', date: 'Jun 5' },
-            { ticker: 'NVDA', action: 'Buy Put', date: 'Jul 1' },
-            { ticker: 'AAPL', action: 'Buy Call', date: 'Oct 6' },
-          ].map(({ ticker, action, date }) => (
-            <div key={ticker} style={{
-              background: '#edf2f7',
-              borderRadius: '10px',
-              padding: '15px 20px',
-              width: '200px',
-              boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-            }}>
-              <h4 style={{ fontSize: '18px', fontWeight: '600' }}>{ticker}</h4>
-              <p style={{ margin: '4px 0' }}>{action}</p>
-              <p style={{ fontSize: '14px', color: '#718096' }}>{date}</p>
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      await fetch("http://127.0.0.1:8000/update_last_login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firebase_uid: result.user.uid }),
+      });
+    } catch (err) {
+      console.error("Login error:", err);
+    }
+  };
+
+  const handleQuickAction = (path) => {
+    navigate(path);
+  };
+
+  const fetchWatchlist = async (uid) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/get_watchlist/${uid}?type=stocks`);
+      if (!response.ok) throw new Error('Failed to fetch watchlist');
+      const data = await response.json();
+
+      const stockDetailsPromises = data.slice(0, 3).map(async (item) => {
+        try {
+          const priceResponse = await fetch(`http://127.0.0.1:8000/stocks/${item.symbol}`);
+          if (!priceResponse.ok) throw new Error(`Failed to fetch stock data for ${item.symbol}`);
+          const priceData = await priceResponse.json();
+
+          return {
+            ...item,
+            currentPrice: priceData.current_price || null,
+            dayChange: priceData.change || null,
+            dayChangePercent: priceData.change_percent || null,
+          };
+        } catch (err) {
+          console.error(`Error fetching stock data for ${item.symbol}:`, err);
+          return {
+            ...item,
+            currentPrice: null,
+            dayChange: null,
+            dayChangePercent: null,
+          };
+        }
+      });
+
+      const stocksWithDetails = await Promise.all(stockDetailsPromises);
+      setWatchlistStocks(stocksWithDetails);
+    } catch (err) {
+      console.error('Error fetching watchlist:', err);
+      setWatchlistStocks([]);
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const suggestionsResponse = await fetch('http://127.0.0.1:8000/smart_suggestions');
+        if (!suggestionsResponse.ok) throw new Error('Failed to fetch suggestions');
+        const suggestionsData = await suggestionsResponse.json();
+        setTopPicks(suggestionsData.slice(0, 3));
+
+        if (user?.uid) {
+          await fetchWatchlist(user.uid);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user]);
+
+  const renderWatchlistSection = () => {
+    if (!user) {
+      return (
+        <section className={styles.loginPrompt}>
+          <FaLock className={styles.lockIcon} />
+          <h2 className={styles.loginTitle}>Track Your Investments</h2>
+          <p className={styles.loginText}>
+            Login to create and manage your watchlist
+          </p>
+          <button 
+            className={styles.loginButton}
+            onClick={handleLogin}
+          >
+            Login / Sign Up
+          </button>
+        </section>
+      );
+    }
+
+    if (watchlistStocks.length === 0) {
+      return null;
+    }
+
+    return (
+      <section className={styles.watchlist}>
+        <div className={styles.watchlistHeader}>
+          <h2 className={styles.sectionTitle}>Watchlist</h2>
+          <button 
+            className={styles.viewAllButton}
+            onClick={() => handleQuickAction('/watchlist')}
+          >
+            View all
+          </button>
+        </div>
+        <div className={styles.watchlistGrid}>
+          {watchlistStocks.map((stock) => (
+            <div 
+              key={stock.symbol} 
+              className={styles.watchlistItem}
+              onClick={() => navigate(`/search?symbol=${stock.symbol}`)}
+            >
+              <div className={styles.watchlistItemHeader}>
+                <span className={styles.symbolText}>{stock.symbol}</span>
+                <span className={styles.priceText} style={{ color: stock.dayChange >= 0 ? '#22c55e' : '#ef4444' }}>
+                  ${stock.currentPrice}
+                </span>
+              </div>
+              <div className={styles.changeContainer}>
+                <span className={styles.changeText} style={{ color: stock.dayChange >= 0 ? '#22c55e' : '#ef4444' }}>
+                  {stock.dayChangePercent !== null 
+                    ? `${stock.dayChange >= 0 ? '+' : ''}${stock.dayChangePercent.toFixed(2)}%`
+                    : 'N/A'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  return (
+    <div className={styles.fullPageBackground}>
+    <div className={styles.container}>
+      {/* Header Section */}
+      <div className={styles.header}>
+        <img src={logo} alt="OptiVue" className={styles.logo} />
+        <div className={styles.headerText}>
+          <h1 className={styles.title}>OptiVue</h1>
+          <p className={styles.subtitle}>Smarter insights for options traders</p>
+        </div>
+      </div>
+
+      {/* Top Picks Section */}
+      <section className={styles.topPicks}>
+        <h2 className={styles.sectionTitle}>Top Picks of the Week</h2>
+        <div className={styles.picksGrid}>
+          {topPicks.map((pick) => (
+            <div 
+              key={`${pick.symbol}-${pick.strike}-${pick.expiration}`} 
+              className={styles.pickCard}
+              onClick={() => navigate(`/search?symbol=${pick.symbol}&showOptions=true&strike=${pick.strike}&type=${pick.option_type}s&expiration=${pick.expiration}`)}
+            >
+              <div className={styles.cardHeader}>
+                <span className={styles.symbolText}>{pick.symbol}</span>
+                <span className={styles.evText}>EV: ${pick.ev.toFixed(2)}</span>
+              </div>
+              <p className={styles.expiryText}>Expires: {pick.expiration}</p>
+              <p className={styles.detailsText}>
+                ${pick.strike} {pick.option_type.toUpperCase()} 
+                <br />
+                Probability: {(pick.probability * 100).toFixed(1)}%
+              </p>
+              <button 
+                className={styles.showMoreButton}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/gpt');
+                }}
+              >
+                Show more
+              </button>
             </div>
           ))}
         </div>
       </section>
 
-      <section style={{ marginTop: '40px' }}>
-        <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '10px' }}>🧠 GPT Sentiment Summary</h3>
-        <div style={{
-          background: '#e6fffa',
-          borderLeft: '6px solid #38b2ac',
-          padding: '15px',
-          borderRadius: '8px',
-          fontSize: '16px',
-        }}>
-          Positive sentiment on tech stocks following strong earnings reports.
+      {/* Quick Actions Section */}
+      <section className={styles.quickActions}>
+        <h2 className={styles.sectionTitle}>Quick Actions</h2>
+        <div className={styles.actionGrid}>
+          <button 
+            className={styles.actionButton}
+            onClick={() => handleQuickAction('/search')}
+          >
+            <FaSearch className={styles.actionIcon} />
+            <span>Search Stocks</span>
+          </button>
+          <button 
+            className={styles.actionButton}
+            onClick={() => handleQuickAction('/expected-value')}
+          >
+            <FaCalculator className={styles.actionIcon} />
+            <span>Run EV Calculator</span>
+          </button>
+          <button 
+            className={styles.actionButton}
+            onClick={() => handleQuickAction('/gpt')}
+          >
+            <FaChartLine className={styles.actionIcon} />
+            <span>Forecasts</span>
+          </button>
         </div>
       </section>
 
-      <section style={{ marginTop: '40px' }}>
-        <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '10px' }}>📰 Recent Market Headlines</h3>
-        <ul style={{ lineHeight: '1.8', paddingLeft: '20px', fontSize: '16px', color: '#4a5568' }}>
-          <li>Fed signals cautious approach to rate changes</li>
-          <li>Oil prices drop amid demand concerns</li>
-          <li>Weekly jobless claims rise unexpectedly</li>
-        </ul>
-      </section>
+      {/* Conditional Watchlist Section */}
+      {renderWatchlistSection()}
+    </div>
     </div>
   );
 }
