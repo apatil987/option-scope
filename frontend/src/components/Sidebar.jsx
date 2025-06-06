@@ -7,6 +7,7 @@ import SidebarUI from '../UI/SidebarUI';
 const Sidebar = forwardRef((props, ref) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(false); // Track hover state
   const navigate = useNavigate();
 
   useImperativeHandle(ref, () => ({
@@ -78,13 +79,24 @@ const Sidebar = forwardRef((props, ref) => {
     });
   };
 
+  const handleMouseEnter = () => setIsExpanded(true);
+  const handleMouseLeave = () => setIsExpanded(false);
+
   return (
-    <SidebarUI
-      user={user}
-      profile={profile}
-      handleLogin={handleLogin}
-      handleLogout={handleLogout}
-    />
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={{ width: isExpanded ? '250px' : '80px', transition: 'width 0.3s ease' }}
+    >
+      <SidebarUI
+        user={user}
+        profile={profile}
+        handleLogin={handleLogin}
+        handleLogout={handleLogout}
+        isExpanded={isExpanded}
+        navigate={navigate}
+      />
+    </div>
   );
 });
 

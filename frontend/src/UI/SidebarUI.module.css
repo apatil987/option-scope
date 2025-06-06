@@ -1,0 +1,144 @@
+:root {
+  --sidebar-bg: #1e293b;
+  --sidebar-gradient: linear-gradient(180deg, #1e293b 0%, #17253a 100%);
+  --text-primary: #f8fafc;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --hover-bg: rgba(255, 255, 255, 0.08);
+  --active-bg: rgba(255, 255, 255, 0.12);
+  --accent-color: #2563eb;
+  --accent-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.sidebar {
+  background-color: #0a0a23;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  border-right: 1px solid #1e3a8a;
+}
+
+.expanded {
+  width: 250px;
+}
+
+.collapsed {
+  width: 80px;
+}
+
+.logoSection {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  margin-bottom: 1rem;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.1);
+}
+
+.title {
+  color: #60a5fa;
+  font-size: 1.75rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.menuList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.menuLink {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  color: #94a3b8;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  margin: 0 0.5rem;
+}
+
+.menuLink:hover {
+  background-color: #1e3a8a;
+  color: #ffffff;
+}
+
+.active {
+  background-color: #1e3a8a;
+  color: #ffffff;
+}
+
+.icon {
+  font-size: 1.25rem;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.linkText {
+  margin-left: 1rem;
+  font-weight: 500;
+}
+
+.authSection {
+  margin-top: auto;
+  padding: 1rem;
+}
+
+.authButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #2563eb;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.authButton:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.googleIcon {
+  min-width: 20px;
+}
+
+/* Collapsed state specific styles */
+.collapsed .menuLink {
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.collapsed .authButton {
+  padding: 0.75rem;
+  justify-content: center;
+}
+
+.collapsed .icon {
+  margin: 0;
+}
