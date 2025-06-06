@@ -3,6 +3,9 @@ import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import WatchlistUI from "../UI/WatchlistUI";
+import LoginPromptModal from '../components/LoginPromptModal';
+import '../components/LoginPromptModal.module.css';
+
 
 export default function Watchlist() {
   const [firebaseUid, setFirebaseUid] = useState(null);
@@ -12,6 +15,7 @@ export default function Watchlist() {
   const [stockDataMap, setStockDataMap] = useState({});
   const [timeInterval, setTimeInterval] = useState("1d");
   const [selectedOption, setSelectedOption] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,6 +60,11 @@ export default function Watchlist() {
   }, [watchlist, view, timeInterval]);
 
   const handleRemove = async (item) => {
+    if (!firebaseUid) {
+      setShowLoginModal(true);
+      return;
+    }
+
     try {
       const response = await fetch('http://127.0.0.1:8000/remove_from_watchlist/', {
         method: 'DELETE',
@@ -81,8 +90,10 @@ export default function Watchlist() {
             )
         )
       );
+      setShowLoginModal(false);
     } catch (error) {
       console.error('Error removing item:', error);
+      setShowLoginModal(false);
     }
   };
 
@@ -105,19 +116,22 @@ export default function Watchlist() {
   });
 
   return (
-    <WatchlistUI
-      watchlist={sortedWatchlist}
-      view={view}
-      setView={setView}
-      sortOption={sortOption}
-      setSortOption={setSortOption}
-      stockDataMap={stockDataMap}
-      timeInterval={timeInterval}
-      setTimeInterval={setTimeInterval}
-      selectedOption={selectedOption}
-      setSelectedOption={setSelectedOption}
-      handleRemove={handleRemove}
-      navigate={navigate}
-    />
+    <>
+      <WatchlistUI
+        watchlist={sortedWatchlist}
+        view={view}
+        setView={setView}
+        sortOption={sortOption}
+        setSortOption={setSortOption}
+        stockDataMap={stockDataMap}
+        timeInterval={timeInterval}
+        setTimeInterval={setTimeInterval}
+        selectedOption={selectedOption}
+        setSelectedOption={setSelectedOption}
+        handleRemove={handleRemove}
+        navigate={navigate}
+      />
+      <LoginPromptModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+    </>
   );
 }

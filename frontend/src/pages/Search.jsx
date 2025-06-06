@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { auth } from '../firebase';
 import SearchUI from '../UI/SearchUI';
 import { useOptions } from '../hooks/useOptions';
+import LoginPromptModal from '../components/LoginPromptModal';
+import '../components/LoginPromptModal.module.css';
 
 export default function Search() {
   const [searchParams] = useSearchParams();
@@ -13,15 +15,16 @@ export default function Search() {
   const [user, setUser] = useState(null);
   const [stockWatchlist, setStockWatchlist] = useState([]);
   const [isStockInWatchlist, setIsStockInWatchlist] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
-    const optionsState = useOptions();
+  const optionsState = useOptions();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(setUser);
     return () => unsubscribe();
   }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     const user = auth.currentUser;
     if (user && stockData) {
       fetch(`http://127.0.0.1:8000/get_watchlist/${user.uid}?type=stocks`)
@@ -36,7 +39,7 @@ export default function Search() {
     }
   }, [stockData]);
 
-    useEffect(() => {
+  useEffect(() => {
     const user = auth.currentUser;
     if (user && stockData && optionsState.showOptions) {
       fetch(`http://127.0.0.1:8000/get_watchlist/${user.uid}?type=options`)
@@ -61,7 +64,7 @@ export default function Search() {
     }
   }, [optionsState.selectedExpiration, optionsState.optionType, stockData]);
 
-    useEffect(() => {
+  useEffect(() => {
     const symbolFromUrl = searchParams.get("symbol");
     const showOptionsParam = searchParams.get("showOptions");
     const strikeParam = searchParams.get("strike");
@@ -113,7 +116,7 @@ export default function Search() {
     loadData();
   }, [searchParams]);
 
-    const fetchStockData = async (symbolToFetch = null) => {
+  const fetchStockData = async (symbolToFetch = null) => {
     try {
       const searchSymbol = symbolToFetch || symbol;      
       if (!searchSymbol) return; 
@@ -133,8 +136,11 @@ export default function Search() {
     }
   };
 
-    const handleAddStock = async () => {
-    if (!user) return alert("Please login first");
+  const handleAddStock = async () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
 
     try {
       const response = await fetch("http://127.0.0.1:8000/add_to_watchlist/", {
@@ -149,9 +155,9 @@ export default function Search() {
       if (response.ok) {
         setStockWatchlist([...stockWatchlist, stockData]);
         setIsStockInWatchlist(true);
-        alert("Added to watchlist ✅");
+        setShowLoginModal(false);
       } else if (response.status === 409) {
-        alert("Already in watchlist ❌");
+        setShowLoginModal(false);
       } else {
         alert("Failed to add to watchlist ❌");
       }
@@ -162,7 +168,10 @@ export default function Search() {
   };
 
   const handleRemoveStock = async () => {
-    if (!user) return;
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
 
     try {
       const response = await fetch("http://127.0.0.1:8000/remove_from_watchlist/", {
@@ -177,7 +186,7 @@ export default function Search() {
       if (response.ok) {
         setStockWatchlist(stockWatchlist.filter(item => item.symbol !== stockData.symbol));
         setIsStockInWatchlist(false);
-        alert("Removed from watchlist ✅");
+        setShowLoginModal(false);
       } else {
         alert("Failed to remove from watchlist ❌");
       }
@@ -187,7 +196,6 @@ export default function Search() {
     }
   };
 
-  
   const handleSearchClick = () => {
     fetchStockData();
   };
@@ -209,19 +217,22 @@ export default function Search() {
   };
 
   return (
-    <SearchUI
-      symbol={symbol}
-      setSymbol={setSymbol}
-      stockData={stockData}
-      error={error}
-      showChart={showChart}
-      setShowChart={setShowChart}
-      isStockInWatchlist={isStockInWatchlist}
-      handleRemoveStock={handleRemoveStock}
-      handleAddStock={handleAddStock}
-      optionsState={optionsState}
-      handleSearchClick={handleSearchClick}
-      handleOptionChainClick={handleOptionChainClick}
-    />
+    <>
+      <SearchUI
+        symbol={symbol}
+        setSymbol={setSymbol}
+        stockData={stockData}
+        error={error}
+        showChart={showChart}
+        setShowChart={setShowChart}
+        isStockInWatchlist={isStockInWatchlist}
+        handleRemoveStock={handleRemoveStock}
+        handleAddStock={handleAddStock}
+        optionsState={optionsState}
+        handleSearchClick={handleSearchClick}
+        handleOptionChainClick={handleOptionChainClick}
+      />
+      <LoginPromptModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+    </>
   );
 };

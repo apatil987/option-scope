@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { styles } from './SidebarUI.styles';
+import { styles } from './SidebarUI.styles.js';
 
 const SidebarUI = ({ user, profile, handleLogin, handleLogout }) => {
   return (
@@ -26,12 +26,11 @@ const SidebarUI = ({ user, profile, handleLogin, handleLogout }) => {
       <ul style={styles.menuList}>
         <li><Link to="/" className="menu-link" style={styles.menuLink}>🏠 Home</Link></li>
         <li><Link to="/search" className="menu-link" style={styles.menuLink}>📊 Search Stocks</Link></li>
-        <li><Link to="/big-movers" className="menu-link" style={styles.menuLink}>📈 Big Movers</Link></li>
-        <li><Link to="/expected-value" className="menu-link" style={styles.menuLink}>∑ Expected Value</Link></li>
+        <li><Link to="/gpt" className="menu-link" style={styles.menuLink}>🧠 GPT Forecasts</Link></li>
         {user && (
           <>
             <li><Link to="/watchlist" className="menu-link" style={styles.menuLink}>⭐ My Watchlist</Link></li>
-            <li><Link to="/gpt" className="menu-link" style={styles.menuLink}>🧠 GPT Forecasts</Link></li>
+            <li><Link to="/expected-value" className="menu-link" style={styles.menuLink}>∑ Expected Value</Link></li>
             <li><Link to="/settings" className="menu-link" style={styles.menuLink}>⚙️ Settings</Link></li>
           </>
         )}

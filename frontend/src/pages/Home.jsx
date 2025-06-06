@@ -52,8 +52,8 @@ export default function Home() {
           return {
             ...item,
             currentPrice: priceData.current_price || null,
-            dayChange: priceData.change || null,
-            dayChangePercent: priceData.change_percent || null,
+            dayChange: priceData.price_change || null,
+            dayChangePercent: priceData.percent_change || null,
           };
         } catch (err) {
           console.error(`Error fetching stock data for ${item.symbol}:`, err);
