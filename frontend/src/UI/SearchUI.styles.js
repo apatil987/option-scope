@@ -14,7 +14,7 @@ export const styles = {
   title: {
     margin: '0',
     fontSize: '24px',
-    color: '#1a1a1a'
+    color: '#ffffff'
   },
   searchContainer: {
     display: 'flex',
@@ -24,14 +24,16 @@ export const styles = {
   input: {
     padding: '8px 12px',
     borderRadius: '6px',
-    border: '1px solid #ddd',
+    border: '2px solid #2563eb',
     fontSize: '14px',
-    width: '200px'
+    width: '200px',
+    backgroundColor: '#1e293b',
+    color: '#ffffff'
   },
   button: {
     padding: '8px 16px',
-    backgroundColor: '#007AFF',
-    color: 'white',
+    backgroundColor: '#2563eb',
+    color: '#ffffff',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
@@ -39,18 +41,19 @@ export const styles = {
     fontWeight: '500'
   },
   error: {
-    color: '#FF3B30',
-    backgroundColor: '#FFE5E5',
+    color: '#ffffff',
+    backgroundColor: '#dc2626',
     padding: '12px',
     borderRadius: '6px',
     marginBottom: '20px'
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#1e293b',
     borderRadius: '12px',
     padding: '24px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    marginBottom: '24px'
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    marginBottom: '24px',
+    border: '1px solid #2563eb'
   },
   stockHeader: {
     display: 'flex',
@@ -60,15 +63,17 @@ export const styles = {
   },
   stockInfo: {
     margin: '0',
-    fontSize: '28px'
+    fontSize: '28px',
+    color: '#ffffff'
   },
   stockPrice: {
     fontSize: '24px',
     fontWeight: '500',
-    marginTop: '8px'
+    marginTop: '8px',
+    color: '#ffffff'
   },
   priceChange: (isPositive) => ({
-    color: isPositive ? '#34C759' : '#FF3B30',
+    color: isPositive ? '#22c55e' : '#ef4444',
     fontSize: '16px',
     marginLeft: '12px'
   }),
@@ -82,12 +87,13 @@ export const styles = {
     textAlign: 'center'
   },
   statLabel: {
-    color: '#666',
+    color: '#ffffff',
     fontSize: '14px'
   },
   statValue: {
     fontSize: '18px',
-    fontWeight: '500'
+    fontWeight: '500',
+    color: '#ffffff'
   },
   optionsContainer: {
     display: 'flex',
@@ -98,8 +104,9 @@ export const styles = {
   select: {
     padding: '8px 12px',
     borderRadius: '6px',
-    border: '1px solid #ddd',
-    fontSize: '14px'
+    border: '1px solid #2563eb',
+    backgroundColor: '#1e293b',
+    color: '#ffffff'
   },
   filterInput: {
     padding: '8px 12px',
@@ -117,12 +124,62 @@ export const styles = {
     padding: '12px 16px',
     textAlign: 'left',
     fontWeight: '500',
-    color: '#666',
-    borderBottom: '1px solid #ddd'
+    color: '#ffffff',
+    borderBottom: '1px solid #2563eb',
+    backgroundColor: '#1e293b'
   },
   tableCell: {
     padding: '12px 16px',
-    borderBottom: '1px solid #eee'
+    borderBottom: '1px solid #2563eb',
+    color: '#ffffff',
+    backgroundColor: '#1e293b'
+  },
+  tableRow: {
+    backgroundColor: '#1e293b'
+  },
+  tableCellHighlight: {
+    backgroundColor: '#1e293b',
+    color: '#ffffff'
+  },
+  tableCellNumber: {
+    color: '#ffffff',
+    fontWeight: '500'
+  },
+  tableCellText: {
+    color: '#ffffff'
+  },
+  tableCellBid: {
+    color: '#22c55e',
+    fontWeight: '500'
+  },
+  tableCellAsk: {
+    color: '#ef4444',
+    fontWeight: '500'
+  },
+  tableCellIV: {
+    color: '#60a5fa',
+    fontWeight: '500'
+  },
+  tableCellOI: {
+    color: '#ffffff',
+    fontWeight: '500'
+  },
+  tableCellVolume: {
+    color: '#ffffff',
+    fontWeight: '500'
+  },
+  tableCellITM: {
+    color: '#22c55e'
+  },
+  tableCellHighlight: {
+    backgroundColor: '#1e293b',
+    color: '#ffffff'
+  },
+  priceUp: {
+    color: '#22c55e'
+  },
+  priceDown: {
+    color: '#ef4444'
   },
   addButton: {
     padding: '6px 12px',

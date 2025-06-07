@@ -3,7 +3,7 @@ import { theme } from '../styles/theme';
 export const styles = {
   container: {
     padding: '2rem',
-    maxWidth: '1200px',
+    width: '100%',
     margin: '0 auto',
     display: 'flex',
     flexDirection: 'column',
@@ -21,7 +21,7 @@ export const styles = {
   sectionTitle: {
     fontSize: '1.75rem',
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#FFFFFF', // updated to white
     marginBottom: '1.5rem',
     display: 'flex',
     alignItems: 'center',
@@ -79,7 +79,7 @@ export const styles = {
   responseTitle: {
     fontSize: '1.1rem',
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#FFFFFF', // updated to white
     marginBottom: '1rem',
     display: 'flex',
     alignItems: 'center',
@@ -88,5 +88,29 @@ export const styles = {
   response: {
     color: theme.colors.text.secondary,
     lineHeight: '1.7',
+  },
+  error: {
+    padding: '1rem',
+    backgroundColor: theme.colors.background.tertiary,
+    borderRadius: '8px',
+    border: `1px solid ${theme.colors.accent.error}`,
+    color: theme.colors.accent.error,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
+  aiIcon: {
+    color: theme.colors.accent.primary,
+  },
+  warningIcon: {
+    color: theme.colors.accent.error,
+  },
+  loadingSpinner: {
+    width: '20px',
+    height: '20px',
+    border: `3px solid ${theme.colors.text.primary}`,
+    borderTop: `3px solid ${theme.colors.background.tertiary}`,
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
   },
 };

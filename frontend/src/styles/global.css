@@ -1,0 +1,21 @@
+:root {
+  background-color: #0a0a23;
+  color: #ffffff;
+  min-height: 100vh;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background-color: #0a0a23;
+  color: #ffffff;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  background-color: #0a0a23;
+  color: #ffffff;
+}

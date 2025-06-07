@@ -204,19 +204,19 @@ const SearchUI = ({
                     {optionData[optionType] &&
                       applyFilters(optionData[optionType]).map((opt, idx) => (
                         <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#f9f9f9' }}>
-                          <td style={styles.tableCell}>${opt?.strike || 'N/A'}</td>
-                          <td style={styles.tableCell}>${opt?.bid || 'N/A'}</td>
-                          <td style={styles.tableCell}>${opt?.ask || 'N/A'}</td>
-                          <td style={styles.tableCell}>
+                          <td style={{ ...styles.tableCell, ...styles.tableCellNumber }}>${opt?.strike || 'N/A'}</td>
+                          <td style={{ ...styles.tableCell, ...styles.tableCellBid }}>${opt?.bid || 'N/A'}</td>
+                          <td style={{ ...styles.tableCell, ...styles.tableCellAsk }}>${opt?.ask || 'N/A'}</td>
+                          <td style={{ ...styles.tableCell, ...styles.tableCellIV }}>
                             {opt?.impliedVolatility ? `${(opt.impliedVolatility * 100).toFixed(2)}%` : 'N/A'}
                           </td>
-                          <td style={styles.tableCell}>
+                          <td style={{ ...styles.tableCell, ...styles.tableCellOI }}>
                             {typeof opt?.openInterest === 'number' ? opt.openInterest.toLocaleString() : 'N/A'}
                           </td>
-                          <td style={styles.tableCell}>
+                          <td style={{ ...styles.tableCell, ...styles.tableCellVolume }}>
                             {typeof opt?.volume === 'number' ? opt.volume.toLocaleString() : 'N/A'}
                           </td>
-                          <td style={styles.tableCell}>{opt?.inTheMoney ? '✅' : ''}</td>
+                          <td style={{ ...styles.tableCell, ...styles.tableCellITM }}>{opt?.inTheMoney ? '✅' : ''}</td>
                           <td style={styles.tableCell}>
                             {isOptionInWatchlist(opt, optionType, symbol) ? (
                               <button

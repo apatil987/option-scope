@@ -6,6 +6,7 @@ import Settings from './pages/Settings';
 import Watchlist from './pages/Watchlist';
 import ExpectedValue from './pages/ExpectedValue';
 import GPTForecasts from './pages/GPTForecasts';
+import './styles/global.css';
 
 function App() {
   return (
