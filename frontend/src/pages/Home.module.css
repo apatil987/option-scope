@@ -1,13 +1,12 @@
 .fullPageBackground {
-  background-color: #0a0a23; /* Matches your container color */
+  background-color: #0a0a23;
   min-height: 100vh;
   width: 100%;
 }
 
 .container {
   padding: 0;
-  flex: 1; /* Dynamically fills remaining space */
-  background-color: #0a0a23; /* Darker background for a sleek look */
+  flex: 1;
   color: #ffffff;
   display: flex;
   flex-direction: column;
@@ -76,14 +75,14 @@
   border-radius: 12px;
   padding: 1.25rem;
   border: 1px solid #2563eb;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
 }
 
 .pickCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .cardHeader {
@@ -127,11 +126,12 @@
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 600;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .showMoreButton:hover {
   background-color: #1d4ed8;
+  transform: translateY(-1px);
 }
 
 .quickActions {
@@ -193,11 +193,12 @@
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .viewAllButton:hover {
   background-color: #1d4ed8;
+  transform: translateY(-1px);
 }
 
 .loginPrompt {
@@ -237,11 +238,12 @@
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .loginButton:hover {
   background-color: #1d4ed8;
+  transform: translateY(-1px);
 }
 
 .watchlistGrid {
@@ -256,13 +258,13 @@
   border-radius: 12px;
   padding: 1rem;
   border: 1px solid #2563eb;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .watchlistItem:hover {
   transform: translateY(-4px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .watchlistItemHeader {
