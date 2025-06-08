@@ -17,14 +17,14 @@ const SmartSuggestions = ({ user }) => {
     const fetchData = async () => {
       try {
         // Fetch suggestions
-        const suggestionsResponse = await fetch('http://127.0.0.1:8000/smart_suggestions');
+        const suggestionsResponse = await fetch('${process.env.REACT_APP_API_URL}/smart_suggestions');
         if (!suggestionsResponse.ok) throw new Error('Failed to fetch suggestions');
         const suggestionsData = await suggestionsResponse.json();
         setSuggestions(suggestionsData);
 
         // Fetch watchlist items if user is logged in
         if (user?.uid) {
-          const watchlistResponse = await fetch(`http://127.0.0.1:8000/get_watchlist/${user.uid}?type=options`);
+          const watchlistResponse = await fetch(`${process.env.REACT_APP_API_URL}/get_watchlist/${user.uid}?type=options`);
           if (watchlistResponse.ok) {
             const watchlistData = await watchlistResponse.json();
             // Create a map for easy lookup
@@ -78,7 +78,7 @@ const SmartSuggestions = ({ user }) => {
     try {
       if (isInWatchlist(suggestion)) {
         // Remove from watchlist
-        const response = await fetch('http://127.0.0.1:8000/remove_from_watchlist/', {
+        const response = await fetch('${process.env.REACT_APP_API_URL}/remove_from_watchlist/', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -100,7 +100,7 @@ const SmartSuggestions = ({ user }) => {
         });
       } else {
         // Add to watchlist
-        const response = await fetch('http://127.0.0.1:8000/add_to_watchlist/', {
+        const response = await fetch('${process.env.REACT_APP_API_URL}/add_to_watchlist/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

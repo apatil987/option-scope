@@ -27,7 +27,7 @@ export default function Search() {
   useEffect(() => {
     const user = auth.currentUser;
     if (user && stockData) {
-      fetch(`http://127.0.0.1:8000/get_watchlist/${user.uid}?type=stocks`)
+      fetch(`${process.env.REACT_APP_API_URL}/get_watchlist/${user.uid}?type=stocks`)
         .then(res => res.json())
         .then(data => {
           setStockWatchlist(data);
@@ -42,7 +42,7 @@ export default function Search() {
   useEffect(() => {
     const user = auth.currentUser;
     if (user && stockData && optionsState.showOptions) {
-      fetch(`http://127.0.0.1:8000/get_watchlist/${user.uid}?type=options`)
+      fetch(`${process.env.REACT_APP_API_URL}/get_watchlist/${user.uid}?type=options`)
         .then(res => res.json())
         .then(data => optionsState.setOptionWatchlist(data))
         .catch(console.error);
@@ -96,7 +96,7 @@ export default function Search() {
             }));
 
             const response = await fetch(
-              `http://127.0.0.1:8000/options/${symbolFromUrl.toUpperCase()}?expiration=${expirationParam || ''}`
+              `${process.env.REACT_APP_API_URL}/options/${symbolFromUrl.toUpperCase()}?expiration=${expirationParam || ''}`
             );
             
             if (!response.ok) {
@@ -120,7 +120,7 @@ export default function Search() {
     try {
       const searchSymbol = symbolToFetch || symbol;      
       if (!searchSymbol) return; 
-      const response = await fetch(`http://127.0.0.1:8000/stocks/${searchSymbol.toUpperCase()}`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/stocks/${searchSymbol.toUpperCase()}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Invalid ticker');
@@ -143,7 +143,7 @@ export default function Search() {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/add_to_watchlist/", {
+      const response = await fetch("${process.env.REACT_APP_API_URL}/add_to_watchlist/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -174,7 +174,7 @@ export default function Search() {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/remove_from_watchlist/", {
+      const response = await fetch("${process.env.REACT_APP_API_URL}/remove_from_watchlist/", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

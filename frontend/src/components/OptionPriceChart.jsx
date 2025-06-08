@@ -19,7 +19,7 @@ export default function OptionPriceChart({ watchlistId, ticker, strike, expirati
         console.log("Fetching data for watchlist ID:", watchlistId);
         
         const res = await fetch(
-          `http://127.0.0.1:8000/option_price_history/${watchlistId}`
+          `${process.env.REACT_APP_API_URL}/option_price_history/${watchlistId}`
         );
         
         if (!res.ok) {

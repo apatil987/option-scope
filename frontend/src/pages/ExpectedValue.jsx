@@ -23,7 +23,7 @@ const ExpectedValue = () => {
 
   useEffect(() => {
     if (user) {
-      fetch(`http://127.0.0.1:8000/get_watchlist/${user.uid}?type=options`)
+      fetch(`${process.env.REACT_APP_API_URL}/get_watchlist/${user.uid}?type=options`)
         .then((res) => res.json())
         .then(setWatchlistOptions)
         .catch((err) => console.error("Error fetching watchlist:", err));
@@ -41,7 +41,7 @@ const ExpectedValue = () => {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/option_details/${option.symbol}/${option.expiration}/${option.strike}/${option.option_type}`
+        `${process.env.REACT_APP_API_URL}/option_details/${option.symbol}/${option.expiration}/${option.strike}/${option.option_type}`
       );
       const data = await response.json();
       setPremium(data.premium);
@@ -59,7 +59,7 @@ const ExpectedValue = () => {
       const timeToExpiration =
         (expirationDate - currentDate) / (365 * 24 * 60 * 60 * 1000);
 
-      const response = await fetch("http://127.0.0.1:8000/calculate_ev", {
+      const response = await fetch("${process.env.REACT_APP_API_URL}/calculate_ev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

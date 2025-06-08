@@ -12,6 +12,9 @@ from math import log, sqrt
 from scipy.stats import norm
 from zoneinfo import ZoneInfo
 from .analysis import analyze_options
+import os
+
+api_url = os.getenv("API_URL")
 
 us_holidays = holidays.US()
 
@@ -86,7 +89,7 @@ async def fetch_option_premiums():
                 # Use the same endpoint that frontend uses
                 async with httpx.AsyncClient() as client:
                     response = await client.get(
-                        f"http://127.0.0.1:8000/options/{item.symbol}?expiration={item.expiration}"
+                        f"{api_url}/options/{item.symbol}?expiration={item.expiration}"
                     )
                 
                 if not response.is_success:

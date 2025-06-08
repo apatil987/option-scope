@@ -14,7 +14,7 @@ const Sidebar = forwardRef((props, ref) => {
     fetchProfile: (uid) => {
       const fetchUid = uid || user?.uid;
       if (fetchUid) {
-        fetch(`http://127.0.0.1:8000/user_profile/${fetchUid}`)
+        fetch(`${process.env.REACT_APP_API_URL}/user_profile/${fetchUid}`)
           .then((res) => res.json())
           .then(setProfile)
           .catch(console.error);
@@ -29,7 +29,7 @@ const Sidebar = forwardRef((props, ref) => {
 
         // Register user in backend if not already registered
         try {
-          await fetch("http://127.0.0.1:8000/register_user/", {
+          await fetch("${process.env.REACT_APP_API_URL}/register_user/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -44,7 +44,7 @@ const Sidebar = forwardRef((props, ref) => {
 
         // Fetch user profile from backend
         try {
-          const res = await fetch(`http://127.0.0.1:8000/user_profile/${currentUser.uid}`);
+          const res = await fetch(`${process.env.REACT_APP_API_URL}/user_profile/${currentUser.uid}`);
           const data = await res.json();
           setProfile(data);
         } catch (err) {
@@ -63,7 +63,7 @@ const Sidebar = forwardRef((props, ref) => {
     try {
       const result = await signInWithPopup(auth, provider);
       // Update last_login in backend
-      await fetch("http://127.0.0.1:8000/update_last_login/", {
+      await fetch("${process.env.REACT_APP_API_URL}/update_last_login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firebase_uid: result.user.uid }),

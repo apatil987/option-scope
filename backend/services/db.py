@@ -1,10 +1,15 @@
+import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from services.base import Base
 from sqlalchemy.pool import QueuePool
 
+# Load environment variables from .env
+load_dotenv()
 
-DATABASE_URL = "postgresql://neondb_owner:npg_3uFfPwjqte9d@ep-super-meadow-a6kr5tgf-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require"
+# Get DATABASE_URL from .env
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(
     DATABASE_URL,

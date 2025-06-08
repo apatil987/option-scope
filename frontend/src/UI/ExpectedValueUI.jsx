@@ -35,7 +35,7 @@ const EVHistoryChart = ({ watchlistId }) => {
 
     const fetchEVHistory = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/option_ev_history/${watchlistId}`);
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/option_ev_history/${watchlistId}`);
         if (response.ok) {
           const data = await response.json();
           setHistory(data);

@@ -12,6 +12,8 @@ from openai import OpenAI
 import os
 import pandas as pd
 
+api_url = os.getenv("API_URL")
+
 WATCH_SYMBOLS = [
     'AAPL', 'NVDA', 'AMZN', 'PLTR', 'SPY', 'CRWV', 
     'WOLF', 'UNH', 'RDDT', 'VOO', 'QQQ', 'GOOG',
@@ -47,7 +49,7 @@ async def analyze_options():
                     print(f"Current price: ${current_price:.2f}")
 
                     # Get option chain expirations using the API
-                    response = await http_client.get(f"http://127.0.0.1:8000/options/{symbol}")
+                    response = await http_client.get(f"${api_url}/options/{symbol}")
                     print(f"API Response Status: {response.status_code}")
                     print(f"API Response Body: {response.text[:200]}...")  # First 200 chars
                     if not response.is_success:
@@ -69,7 +71,7 @@ async def analyze_options():
                             
                             # Get option chain for this expiration
                             response = await http_client.get(
-                                f"http://127.0.0.1:8000/options/{symbol}?expiration={expiration}"
+                                f"${api_url}/options/{symbol}?expiration={expiration}"
                             )
                             if not response.is_success:
                                 print(f"Failed to fetch chain for {symbol} {expiration}")
