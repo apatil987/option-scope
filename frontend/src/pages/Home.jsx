@@ -23,7 +23,7 @@ export default function Home() {
   const handleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
-      await fetch("${process.env.REACT_APP_API_URL}/update_last_login/", {
+      await fetch(`${import.meta.env.VITE_API_URL}/update_last_login/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firebase_uid: result.user.uid }),
@@ -39,13 +39,13 @@ export default function Home() {
 
   const fetchWatchlist = async (uid) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/get_watchlist/${uid}?type=stocks`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/get_watchlist/${uid}?type=stocks`);
       if (!response.ok) throw new Error('Failed to fetch watchlist');
       const data = await response.json();
 
       const stockDetailsPromises = data.slice(0, 3).map(async (item) => {
         try {
-          const priceResponse = await fetch(`${process.env.REACT_APP_API_URL}/stocks/${item.symbol}`);
+          const priceResponse = await fetch(`${import.meta.env.VITE_API_URL}/stocks/${item.symbol}`);
           if (!priceResponse.ok) throw new Error(`Failed to fetch stock data for ${item.symbol}`);
           const priceData = await priceResponse.json();
 
@@ -77,7 +77,7 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const suggestionsResponse = await fetch('${process.env.REACT_APP_API_URL}/smart_suggestions');
+        const suggestionsResponse = await fetch(`${import.meta.env.VITE_API_URL}/smart_suggestions`);
         if (!suggestionsResponse.ok) throw new Error('Failed to fetch suggestions');
         const suggestionsData = await suggestionsResponse.json();
         setTopPicks(suggestionsData.slice(0, 3));

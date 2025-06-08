@@ -25,7 +25,7 @@ export const useOptions = () => {
 
     setIsLoading(true);
     try {
-      const url = `${process.env.REACT_APP_API_URL}/options/${symbolToUse.toUpperCase()}?expiration=${expirationToUse || ''}`;
+      const url = `${import.meta.env.VITE_API_URL}/options/${symbolToUse.toUpperCase()}?expiration=${expirationToUse || ''}`;
       console.log('Fetching options from:', url);
       
       const response = await fetch(url);
@@ -53,7 +53,7 @@ export const useOptions = () => {
   };
 
   const refreshOptionWatchlist = async (uid) => {
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/get_watchlist/${uid}?type=options`);
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/get_watchlist/${uid}?type=options`);
     const data = await response.json();
     setOptionWatchlist(data);
   };
@@ -72,7 +72,7 @@ export const useOptions = () => {
     };
 
     try {
-      const res = await fetch("${process.env.REACT_APP_API_URL}/add_to_watchlist/", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/add_to_watchlist/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -105,7 +105,7 @@ export const useOptions = () => {
     };
 
     try {
-      await fetch("${process.env.REACT_APP_API_URL}/remove_from_watchlist/", {
+      await fetch(`${import.meta.env.VITE_API_URL}/remove_from_watchlist/`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

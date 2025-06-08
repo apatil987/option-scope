@@ -12,7 +12,7 @@ function Settings({ sidebarRef }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setFirebaseUid(user.uid);
-        fetch(`${process.env.REACT_APP_API_URL}/user_profile/${user.uid}`)
+        fetch(`${import.meta.env.VITE_API_URL}/user_profile/${user.uid}`)
           .then((res) => res.json())
           .then((data) => {
             if (data.preferred_view) setPreferredView(data.preferred_view);
@@ -28,7 +28,7 @@ function Settings({ sidebarRef }) {
     e.preventDefault();
 
     try {
-      const res = await fetch("${process.env.REACT_APP_API_URL}/update_user/", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/update_user/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

@@ -27,7 +27,7 @@ export default function Watchlist() {
 
   useEffect(() => {
     if (firebaseUid) {
-      fetch(`${process.env.REACT_APP_API_URL}/get_watchlist/${firebaseUid}?type=${view}`)
+      fetch(`${import.meta.env.VITE_API_URL}/get_watchlist/${firebaseUid}?type=${view}`)
         .then((res) => res.json())
         .then(setWatchlist)
         .catch(console.error);
@@ -42,7 +42,7 @@ export default function Watchlist() {
         for (const item of stocksOnly) {
           try {
             const res = await fetch(
-              `${process.env.REACT_APP_API_URL}/stock_sparkline/${item.symbol}?interval=${timeInterval}`
+              `${import.meta.env.VITE_API_URL}/stock_sparkline/${item.symbol}?interval=${timeInterval}`
             );
             if (res.ok) {
               const data = await res.json();
@@ -66,7 +66,7 @@ export default function Watchlist() {
     }
 
     try {
-      const response = await fetch('${process.env.REACT_APP_API_URL}/remove_from_watchlist/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/remove_from_watchlist/`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
